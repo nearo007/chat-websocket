@@ -150,7 +150,7 @@ src/
    npm run dev
    ```
 
-O servidor estará rodando em `http://localhost:1727`.
+O servidor estará rodando em `http://localhost:3000`.
 
 ### Atalhos
 
