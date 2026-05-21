@@ -154,8 +154,8 @@ O servidor estará rodando em `http://localhost:1727`.
 
 ### Atalhos
 
-- `npm run start:db` — Combina os passos 4, 6 e 8: inicia a base de dados Docker, executa as migrações e arranca o servidor.
-- `npm run start:full` — Como o `start:db` mas também copia o `.env.example` para `.env` automaticamente se este não existir. (Opcional — útil para primeira execução rápida.)
+- `npm run start:db` — Combina os passos 4, 6 e 8: inicia a base de dados Docker, executa as migrações e inicializa o servidor.
+- `npm run start:full` — Como o `start:db` mas também copia o `.env.example` para `.env` automaticamente se este não existir. (Útil para primeira execução.)
 
 ### Comandos Úteis
 
