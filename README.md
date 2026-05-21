@@ -177,22 +177,22 @@ O servidor estará rodando em `http://localhost:3000`.
 
 ### Usuários (`/user`)
 
-- `POST /user/create` - Criar novo usuário
-- `GET /user/` - Listar todos os usuários (requer auth)
+- `POST /user` - Criar novo usuário
+- `GET /user` - Listar todos os usuários (requer auth)
 - `PATCH /user/:id` - Atualizar usuário (requer auth)
 - `DELETE /user/:id` - Deletar usuário (requer auth)
 
 ### Itens (`/item`) - Todos requerem autenticação
 
-- `POST /item/create` - Criar novo item
-- `GET /item/` - Listar todos os itens
+- `POST /item` - Criar novo item
+- `GET /item` - Listar todos os itens
 - `PATCH /item/:id` - Atualizar item
 - `DELETE /item/:id` - Deletar item
 
 ### Empréstimos (`/loan`) - Todos requerem autenticação
 
-- `POST /loan/create` - Criar novo empréstimo
-- `GET /loan/` - Listar todos os empréstimos
+- `POST /loan` - Criar novo empréstimo
+- `GET /loan` - Listar todos os empréstimos
 - `PATCH /loan/:id` - Atualizar empréstimo
 - `DELETE /loan/:id` - Deletar empréstimo
 
@@ -236,7 +236,7 @@ Content-Type: application/json
 
 ### Criar Item
 ```bash
-POST /item/create
+POST /item
 Authorization: Bearer <access_token>
 Content-Type: application/json
 
@@ -250,7 +250,7 @@ Content-Type: application/json
 
 ### Criar Empréstimo
 ```bash
-POST /loan/create
+POST /loan
 Authorization: Bearer <access_token>
 Content-Type: application/json
 

@@ -4,7 +4,7 @@ import { authMiddleware } from "@src/middlewares/authMiddleware.js";
 
 const itemRouter = Router();
 
-itemRouter.post("/create", authMiddleware, itemController.create);
+itemRouter.post("/", authMiddleware, itemController.create);
 itemRouter.get("/", authMiddleware, itemController.list);
 itemRouter.get("/by-category", authMiddleware, itemController.listByCategory);
 itemRouter.get("/by-location", authMiddleware, itemController.listByLocation);

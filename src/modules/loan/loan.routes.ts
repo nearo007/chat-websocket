@@ -4,7 +4,7 @@ import { authMiddleware } from "@src/middlewares/authMiddleware.js";
 
 const loanRouter = Router();
 
-loanRouter.post("/create", authMiddleware, loanController.create);
+loanRouter.post("/", authMiddleware, loanController.create);
 loanRouter.get("/", authMiddleware, loanController.list);
 loanRouter.get("/:id", authMiddleware, loanController.getById);
 loanRouter.patch("/:id", authMiddleware, loanController.updateById);

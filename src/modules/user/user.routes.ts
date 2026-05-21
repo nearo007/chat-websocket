@@ -4,7 +4,7 @@ import { authMiddleware } from "@src/middlewares/authMiddleware.js";
 
 const userRouter = Router();
 
-userRouter.post("/create", userController.create);
+userRouter.post("/", userController.create);
 userRouter.get("/", authMiddleware, userController.list);
 userRouter.get("/:id", authMiddleware, userController.getById);
 userRouter.patch("/:id", authMiddleware, userController.updateById);
