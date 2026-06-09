@@ -28,6 +28,19 @@ class ClientService {
         return client;
     }
 
+    async getLoanHistory(id: number) {
+        const client = await prisma.client.findUnique({
+            where: { id },
+            include: {
+                loans: {
+                    include: { item: true },
+                    orderBy: { loanDate: "desc" },
+                },
+            },
+        });
+        return client;
+    }
+
     async deleteById(id: number): Promise<void> {
         await prisma.client.delete({ where: { id } });
         return;
