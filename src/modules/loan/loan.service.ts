@@ -1,5 +1,4 @@
 import { prisma } from "@lib/prisma.js";
-import { handlePrismaError } from "@shared/utils/prisma.js";
 import type {
     CreateLoanDTO,
     LoanDTO,
@@ -7,6 +6,7 @@ import type {
 } from "@modules/loan/loan.dtos.js";
 import { CreateLoanValidator } from "./input-validation/create-loan.validator.js";
 import { MESSAGES } from "@src/constants/messages.js";
+import { movementService } from "@modules/movement/movement.service.js";
 
 class LoanService {
     async create(data: CreateLoanDTO): Promise<LoanDTO> {
@@ -20,9 +20,17 @@ class LoanService {
             throw new Error(MESSAGES.ITEM.NOT_FOUND.GENERAL);
         }
 
-        if (data.loanQuantity > item.totalQuantity) {
+        const activeLoans = await prisma.loan.aggregate({
+            where: { itemId: data.itemId, returnDate: null },
+            _sum: { loanQuantity: true },
+        });
+
+        const loanedQuantity = activeLoans._sum.loanQuantity ?? 0;
+        const availableQuantity = item.totalQuantity - loanedQuantity;
+
+        if (data.loanQuantity > availableQuantity) {
             throw new Error(
-                MESSAGES.LOAN.VALIDATION.QUANTITY_TOO_BIG(item.totalQuantity),
+                MESSAGES.LOAN.VALIDATION.QUANTITY_TOO_BIG(availableQuantity),
             );
         }
 
@@ -36,6 +44,11 @@ class LoanService {
                 itemId: data.itemId,
             },
         });
+
+        await movementService.create(
+            { type: "SAIDA", quantity: data.loanQuantity, itemId: data.itemId, reason: "Empréstimo registrado" },
+            loan.id,
+        );
 
         return loan;
     }
@@ -58,20 +71,37 @@ class LoanService {
             returnDate?: Date | null;
         },
     ): Promise<LoanDTO> {
+        const existing = await prisma.loan.findUnique({ where: { id } });
+        if (!existing) {
+            throw new Error(MESSAGES.LOAN.NOT_FOUND.BY_ID);
+        }
+
         const loan = await prisma.loan.update({
             where: { id },
             data,
         });
 
+        if (!existing.returnDate && data.returnDate) {
+            await movementService.create(
+                { type: "ENTRADA", quantity: existing.loanQuantity, itemId: existing.itemId, reason: "Devolução registrada" },
+                id,
+            );
+        }
+
         return loan;
     }
 
     async deleteById(id: number): Promise<void> {
-        await prisma.loan.delete({
-            where: { id },
-        });
+        const existing = await prisma.loan.findUnique({ where: { id } });
 
-        return;
+        if (existing && !existing.returnDate) {
+            await movementService.create(
+                { type: "ENTRADA", quantity: existing.loanQuantity, itemId: existing.itemId, reason: "Empréstimo cancelado" },
+                id,
+            );
+        }
+
+        await prisma.loan.delete({ where: { id } });
     }
 }
 

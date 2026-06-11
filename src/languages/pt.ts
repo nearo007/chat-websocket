@@ -57,9 +57,22 @@ export const PT_MESSAGES = {
         },
     },
     LOAN: {
+        NOT_FOUND: {
+            BY_ID: "Não foi possível encontrar um empréstimo com esse ID.",
+        },
         VALIDATION: {
             QUANTITY_TOO_BIG: (num: number) =>
                 `Quantidade máxima disponível em estoque: ${num}.`,
+        },
+    },
+    MOVEMENT: {
+        NOT_FOUND: {
+            GENERAL: "Nenhuma movimentação encontrada.",
+        },
+        VALIDATION: {
+            TYPE_REQUIRED: "O tipo de movimentação é obrigatório.",
+            TYPE_INVALID: "O tipo deve ser ENTRADA ou SAIDA.",
+            ITEM_NOT_FOUND: "Item não encontrado para registrar movimentação.",
         },
     },
     CLIENT: {

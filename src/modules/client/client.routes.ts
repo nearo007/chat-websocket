@@ -6,6 +6,7 @@ const clientRouter = Router();
 
 clientRouter.post("/", authMiddleware, clientController.create);
 clientRouter.get("/", authMiddleware, clientController.list);
+clientRouter.get("/:id/loans", authMiddleware, clientController.getLoanHistory);
 clientRouter.get("/:id", authMiddleware, clientController.getById);
 clientRouter.patch("/:id", authMiddleware, clientController.updateById);
 clientRouter.delete("/:id", authMiddleware, clientController.deleteById);

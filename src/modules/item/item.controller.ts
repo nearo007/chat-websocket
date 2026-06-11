@@ -7,6 +7,7 @@ import type {
     UpdateItemDTO,
 } from "@modules/item/item.dtos.js";
 
+
 class ItemController {
     async create(req: Request, res: Response) {
         const data: CreateItemDTO = req.body;
@@ -46,6 +47,12 @@ class ItemController {
 
         const item = await itemService.updateById(itemId, data);
         return res.status(200).json(item);
+    }
+
+    async getStockById(req: Request, res: Response) {
+        const id = Number(req.params.id);
+        const stock = await itemService.getStockById(id);
+        return res.status(200).json(stock);
     }
 
     async deleteById(req: Request, res: Response) {

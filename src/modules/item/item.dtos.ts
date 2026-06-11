@@ -25,3 +25,16 @@ export type ListByCategoryDTO = {
 export type ListByLocationDTO = {
     location: string;
 };
+
+export type ItemStockDTO = ItemDTO & {
+    id: number;
+    availableQuantity: number;
+    loanedQuantity: number;
+    activeLoans: {
+        id: number;
+        loanQuantity: number;
+        loanDate: Date;
+        dueDate: Date;
+        clientId: number;
+    }[];
+};

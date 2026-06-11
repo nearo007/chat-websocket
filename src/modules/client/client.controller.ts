@@ -27,6 +27,12 @@ class ClientController {
         return res.status(200).json(client);
     }
 
+    async getLoanHistory(req: Request, res: Response) {
+        const id = Number(req.params.id);
+        const history = await clientService.getLoanHistory(id);
+        return res.status(200).json(history);
+    }
+
     async deleteById(req: Request, res: Response) {
         const id = Number(req.params.id);
         await clientService.deleteById(id);

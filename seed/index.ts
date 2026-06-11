@@ -10,7 +10,7 @@ function askYesNo(question: string): Promise<boolean> {
   return new Promise((resolve) => {
     rl.question(`${question} (y/N) `, (answer) => {
       rl.close();
-      resolve(answer.toLowerCase() === "y" || answer.toLowerCase() === "yes");
+      resolve(answer.trim().toLowerCase() === "y" || answer.trim().toLowerCase() === "yes");
     });
   });
 }

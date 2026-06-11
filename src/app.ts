@@ -7,6 +7,7 @@ import { itemRouter } from '@modules/item/item.routes.js';
 import { loanRouter } from '@modules/loan/loan.routes.js';
 import { authRouter } from '@modules/auth/auth.routes.js';
 import { clientRouter } from '@modules/client/client.routes.js';
+import { movementRouter } from '@modules/movement/movement.routes.js';
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use('/item', itemRouter);
 app.use('/loan', loanRouter);
 app.use('/auth', authRouter);
 app.use('/client', clientRouter);
+app.use('/movement', movementRouter);
 
 app.use(errorHandler);
 
