@@ -7,11 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-enum MovementType {
-  ENTRADA
-  SAIDA
-}
-
 model User {
   id           Int         @id @default(autoincrement())
   email        String      @unique
@@ -46,13 +41,13 @@ model Client {
 }
 
 model Item {
-  id            Int             @id @default(autoincrement())
-  name          String
-  category      String?
-  totalQuantity Int
-  location      String
-  loans         Loan[]
-  movements     StockMovement[]
+  id                Int     @id @default(autoincrement())
+  name              String
+  category          String?
+  totalQuantity     Int     @default(0)
+  availableQuantity Int     @default(0)
+  location          String
+  loans             Loan[]
 }
 
 model Loan {
@@ -68,20 +63,4 @@ model Loan {
 
   item   Item @relation(fields: [itemId], references: [id])
   itemId Int
-
-  movements StockMovement[]
-}
-
-model StockMovement {
-  id        Int          @id @default(autoincrement())
-  type      MovementType
-  quantity  Int
-  reason    String?
-  createdAt DateTime     @default(now())
-
-  itemId Int
-  item   Item @relation(fields: [itemId], references: [id])
-
-  loanId Int?
-  loan   Loan? @relation(fields: [loanId], references: [id])
 }

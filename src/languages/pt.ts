@@ -54,6 +54,8 @@ export const PT_MESSAGES = {
             LOCATION_REQUIRED: "A localização é obrigatória.",
             LOCATION_TOO_LONG: (num: number) =>
                 `A localização deve ter no máximo ${num} caracteres.`,
+            AVAILABLE_QUANTITY_EXCEEDS_TOTAL:
+                "A quantidade disponível para empréstimo não pode ser maior que a quantidade total.",
         },
     },
     LOAN: {
@@ -63,16 +65,6 @@ export const PT_MESSAGES = {
         VALIDATION: {
             QUANTITY_TOO_BIG: (num: number) =>
                 `Quantidade máxima disponível em estoque: ${num}.`,
-        },
-    },
-    MOVEMENT: {
-        NOT_FOUND: {
-            GENERAL: "Nenhuma movimentação encontrada.",
-        },
-        VALIDATION: {
-            TYPE_REQUIRED: "O tipo de movimentação é obrigatório.",
-            TYPE_INVALID: "O tipo deve ser ENTRADA ou SAIDA.",
-            ITEM_NOT_FOUND: "Item não encontrado para registrar movimentação.",
         },
     },
     CLIENT: {
@@ -113,3 +105,4 @@ export const PT_MESSAGES = {
         DUE_DATE: "Data de Vencimento",
     },
 } as const;
+

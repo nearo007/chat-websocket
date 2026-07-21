@@ -13,33 +13,60 @@ export class CreateItemValidator {
         const category = data.category?.trim();
         const location = data.location?.trim();
         const totalQuantity = data.totalQuantity;
+        const availableQuantity = data.availableQuantity;
 
         if (!name) {
             throw new Error(MESSAGES.ITEM.VALIDATION.NAME_REQUIRED);
         }
 
         if (name.length < minNameLength) {
-            throw new Error(MESSAGES.ITEM.VALIDATION.NAME_TOO_SHORT(minNameLength));
+            throw new Error(
+                MESSAGES.ITEM.VALIDATION.NAME_TOO_SHORT(minNameLength),
+            );
         }
 
         if (name.length > maxNameLength) {
-            throw new Error(MESSAGES.ITEM.VALIDATION.NAME_TOO_LONG(maxNameLength));
+            throw new Error(
+                MESSAGES.ITEM.VALIDATION.NAME_TOO_LONG(maxNameLength),
+            );
         }
 
         if (category) {
             if (category.length > maxCategoryLength) {
-                throw new Error(MESSAGES.ITEM.VALIDATION.CATEGORY_TOO_LONG(maxCategoryLength));
+                throw new Error(
+                    MESSAGES.ITEM.VALIDATION.CATEGORY_TOO_LONG(
+                        maxCategoryLength,
+                    ),
+                );
             }
         }
 
-        QuantityValidator.validate(totalQuantity);
+        if (totalQuantity) {
+            QuantityValidator.validate(totalQuantity);
+        }
+
+        if (availableQuantity) {
+            QuantityValidator.validate(availableQuantity);
+
+            if (totalQuantity) {
+                if (availableQuantity > totalQuantity) {
+                    throw new Error(
+                        MESSAGES.ITEM.VALIDATION
+                            .AVAILABLE_QUANTITY_EXCEEDS_TOTAL,
+                    );
+                }
+            }
+        }
 
         if (!location) {
             throw new Error(MESSAGES.ITEM.VALIDATION.LOCATION_REQUIRED);
         }
 
         if (location.length > maxLocationLength) {
-            throw new Error(MESSAGES.ITEM.VALIDATION.LOCATION_TOO_LONG(maxLocationLength));
+            throw new Error(
+                MESSAGES.ITEM.VALIDATION.LOCATION_TOO_LONG(maxLocationLength),
+            );
         }
     }
 }
+

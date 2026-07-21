@@ -2,7 +2,6 @@ import { prisma } from "@lib/prisma.js";
 import type {
     CreateItemDTO,
     ItemDTO,
-    ItemStockDTO,
     ListByCategoryDTO,
     ListByLocationDTO,
     UpdateItemDTO,
@@ -59,37 +58,6 @@ class ItemService {
         return item;
     }
 
-    async getStockById(id: number): Promise<ItemStockDTO | null> {
-        const item = await prisma.item.findUnique({
-            where: { id },
-            include: {
-                loans: {
-                    where: { returnDate: null },
-                    select: {
-                        id: true,
-                        loanQuantity: true,
-                        loanDate: true,
-                        dueDate: true,
-                        clientId: true,
-                    },
-                },
-            },
-        });
-
-        if (!item) return null;
-
-        const loanedQuantity = item.loans.reduce((sum, l) => sum + l.loanQuantity, 0);
-        const availableQuantity = item.totalQuantity - loanedQuantity;
-
-        const { loans, ...itemData } = item;
-        return {
-            ...itemData,
-            availableQuantity,
-            loanedQuantity,
-            activeLoans: loans,
-        };
-    }
-
     async deleteById(id: number): Promise<void> {
         await prisma.item.delete({
             where: { id },
@@ -101,3 +69,4 @@ class ItemService {
 
 const itemService = new ItemService();
 export { itemService };
+
