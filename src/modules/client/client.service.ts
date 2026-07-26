@@ -1,49 +1,43 @@
-import { prisma } from "@lib/prisma.js";
 import type {
     ClientDTO,
     CreateClientDTO,
     UpdateClientDTO,
 } from "./client.dtos.js";
 import { CreateClientValidator } from "./input-validation/create-client.validator.js";
+import {
+    PrismaClientRepository,
+    type ClientRepository,
+} from "./repositories/client.repository.js";
 
 class ClientService {
+    constructor(
+        private readonly clientRepository: ClientRepository =
+            new PrismaClientRepository(),
+    ) {}
+
     async create(data: CreateClientDTO): Promise<ClientDTO> {
         CreateClientValidator.validate(data);
-        const client = await prisma.client.create({ data });
-        return client;
+        return this.clientRepository.create(data);
     }
 
     async list(): Promise<ClientDTO[]> {
-        const clients = await prisma.client.findMany();
-        return clients;
+        return this.clientRepository.list();
     }
 
     async getById(id: number): Promise<ClientDTO | null> {
-        const client = await prisma.client.findUnique({ where: { id } });
-        return client;
+        return this.clientRepository.findById(id);
     }
 
     async updateById(id: number, data: UpdateClientDTO): Promise<ClientDTO> {
-        const client = await prisma.client.update({ where: { id }, data });
-        return client;
+        return this.clientRepository.update(id, data);
     }
 
     async getLoanHistory(id: number) {
-        const client = await prisma.client.findUnique({
-            where: { id },
-            include: {
-                loans: {
-                    include: { item: true },
-                    orderBy: { loanDate: "desc" },
-                },
-            },
-        });
-        return client;
+        return this.clientRepository.getLoanHistory(id);
     }
 
     async deleteById(id: number): Promise<void> {
-        await prisma.client.delete({ where: { id } });
-        return;
+        await this.clientRepository.delete(id);
     }
 }
 

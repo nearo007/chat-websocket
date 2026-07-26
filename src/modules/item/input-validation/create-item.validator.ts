@@ -41,14 +41,14 @@ export class CreateItemValidator {
             }
         }
 
-        if (totalQuantity) {
+        if (totalQuantity !== undefined) {
             QuantityValidator.validate(totalQuantity);
         }
 
-        if (availableQuantity) {
+        if (availableQuantity !== undefined) {
             QuantityValidator.validate(availableQuantity);
 
-            if (totalQuantity) {
+            if (totalQuantity !== undefined) {
                 if (availableQuantity > totalQuantity) {
                     throw new Error(
                         MESSAGES.ITEM.VALIDATION
@@ -69,4 +69,3 @@ export class CreateItemValidator {
         }
     }
 }
-

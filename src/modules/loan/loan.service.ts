@@ -1,4 +1,3 @@
-import { prisma } from "@lib/prisma.js";
 import type {
     CreateLoanDTO,
     LoanDTO,
@@ -6,56 +5,50 @@ import type {
 } from "@modules/loan/loan.dtos.js";
 import { CreateLoanValidator } from "./input-validation/create-loan.validator.js";
 import { MESSAGES } from "@src/constants/messages.js";
-import { itemService } from "../item/item.service.js";
+import {
+    PrismaLoanRepository,
+    type LoanRepository,
+} from "./repositories/loan.repository.js";
 
 class LoanService {
+    constructor(
+        private readonly loanRepository: LoanRepository =
+            new PrismaLoanRepository(),
+    ) {}
+
     async create(data: CreateLoanDTO): Promise<LoanDTO> {
         CreateLoanValidator.validate(data);
 
-        const item = await prisma.item.findFirst({
-            where: { id: data.itemId },
+        const result = await this.loanRepository.createWithStockReservation({
+            loanDate: new Date(data.loanDate),
+            dueDate: new Date(data.dueDate),
+            returnDate: data.returnDate ? new Date(data.returnDate) : null,
+            loanQuantity: data.loanQuantity,
+            clientId: data.clientId,
+            itemId: data.itemId,
         });
 
-        if (!item) {
+        if (result.kind === "item-not-found") {
             throw new Error(MESSAGES.ITEM.NOT_FOUND.GENERAL);
         }
 
-        if (data.loanQuantity > item.availableQuantity) {
+        if (result.kind === "insufficient-stock") {
             throw new Error(
                 MESSAGES.LOAN.VALIDATION.QUANTITY_TOO_BIG(
-                    item.availableQuantity,
+                    result.availableQuantity,
                 ),
             );
         }
 
-        const loan = await prisma.loan.create({
-            data: {
-                loanDate: new Date(data.loanDate),
-                dueDate: new Date(data.dueDate),
-                returnDate: data.returnDate ? new Date(data.returnDate) : null,
-                loanQuantity: data.loanQuantity,
-                clientId: data.clientId,
-                itemId: data.itemId,
-            },
-        });
-
-        const availableQuantity = item.availableQuantity - data.loanQuantity;
-
-        await itemService.updateById(data.itemId, {
-            availableQuantity,
-        });
-
-        return loan;
+        return result.loan;
     }
 
     async list(): Promise<LoanDTO[]> {
-        const loans = await prisma.loan.findMany();
-        return loans;
+        return this.loanRepository.list();
     }
 
     async getById(id: number): Promise<LoanDTO | null> {
-        const loan = await prisma.loan.findUnique({ where: { id } });
-        return loan;
+        return this.loanRepository.findById(id);
     }
 
     async updateById(
@@ -66,19 +59,31 @@ class LoanService {
             returnDate?: Date | null;
         },
     ): Promise<LoanDTO> {
-        const loan = await prisma.loan.update({
-            where: { id },
-            data,
-        });
+        const result = await this.loanRepository.updateWithStock(id, data);
 
-        return loan;
+        if (result.kind === "not-found") {
+            throw new Error(MESSAGES.LOAN.NOT_FOUND.BY_ID);
+        }
+
+        if (result.kind === "insufficient-stock") {
+            throw new Error(
+                MESSAGES.LOAN.VALIDATION.QUANTITY_TOO_BIG(
+                    result.availableQuantity,
+                ),
+            );
+        }
+
+        return result.loan;
     }
 
     async deleteById(id: number): Promise<void> {
-        await prisma.loan.delete({ where: { id } });
+        const result = await this.loanRepository.deleteWithStock(id);
+
+        if (result.kind === "not-found") {
+            throw new Error(MESSAGES.LOAN.NOT_FOUND.BY_ID);
+        }
     }
 }
 
 const loanService = new LoanService();
 export { loanService };
-
