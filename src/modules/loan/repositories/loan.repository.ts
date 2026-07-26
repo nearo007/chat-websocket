@@ -1,5 +1,6 @@
 import { prisma } from "@src/lib/prisma.js";
 import type { Loan, Prisma } from "@src/generated/prisma/client.js";
+import { InsufficientStockError } from "@src/shared/errors/insufficient-stock.error.js";
 
 export type LoanCreateData = {
     clientId: number;
@@ -16,32 +17,18 @@ export type LoanUpdateData = {
     returnDate?: Date | null;
 };
 
-export type CreateLoanResult =
-    | { kind: "created"; loan: Loan }
-    | { kind: "item-not-found" }
-    | { kind: "insufficient-stock"; availableQuantity: number };
-
-export type UpdateLoanResult =
-    | { kind: "updated"; loan: Loan }
-    | { kind: "not-found" }
-    | { kind: "insufficient-stock"; availableQuantity: number };
-
-export type DeleteLoanResult =
-    | { kind: "deleted" }
-    | { kind: "not-found" };
-
 export interface LoanRepository {
-    createWithStockReservation(data: LoanCreateData): Promise<CreateLoanResult>;
+    createWithStockReservation(data: LoanCreateData): Promise<Loan | null>;
     list(): Promise<Loan[]>;
     findById(id: number): Promise<Loan | null>;
-    updateWithStock(id: number, data: LoanUpdateData): Promise<UpdateLoanResult>;
-    deleteWithStock(id: number): Promise<DeleteLoanResult>;
+    updateWithStock(id: number, data: LoanUpdateData): Promise<Loan | null>;
+    deleteWithStock(id: number): Promise<Loan | null>;
 }
 
 export class PrismaLoanRepository implements LoanRepository {
     async createWithStockReservation(
         data: LoanCreateData,
-    ): Promise<CreateLoanResult> {
+    ): Promise<Loan | null> {
         return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const item = await tx.item.findUnique({
                 where: { id: data.itemId },
@@ -49,7 +36,7 @@ export class PrismaLoanRepository implements LoanRepository {
             });
 
             if (!item) {
-                return { kind: "item-not-found" as const };
+                return null;
             }
 
             if (data.returnDate === null) {
@@ -62,15 +49,11 @@ export class PrismaLoanRepository implements LoanRepository {
                 });
 
                 if (reserved.count !== 1) {
-                    return {
-                        kind: "insufficient-stock" as const,
-                        availableQuantity: item.availableQuantity,
-                    };
+                    throw new InsufficientStockError(item.availableQuantity);
                 }
             }
 
-            const loan = await tx.loan.create({ data });
-            return { kind: "created" as const, loan };
+            return tx.loan.create({ data });
         });
     }
 
@@ -85,12 +68,12 @@ export class PrismaLoanRepository implements LoanRepository {
     async updateWithStock(
         id: number,
         data: LoanUpdateData,
-    ): Promise<UpdateLoanResult> {
+    ): Promise<Loan | null> {
         return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const existing = await tx.loan.findUnique({ where: { id } });
 
             if (!existing) {
-                return { kind: "not-found" as const };
+                return null;
             }
 
             const isBeingReturned =
@@ -123,24 +106,22 @@ export class PrismaLoanRepository implements LoanRepository {
                         select: { availableQuantity: true },
                     });
 
-                    return {
-                        kind: "insufficient-stock" as const,
-                        availableQuantity: item?.availableQuantity ?? 0,
-                    };
+                    throw new InsufficientStockError(
+                        item?.availableQuantity ?? 0,
+                    );
                 }
             }
 
-            const loan = await tx.loan.update({ where: { id }, data });
-            return { kind: "updated" as const, loan };
+            return tx.loan.update({ where: { id }, data });
         });
     }
 
-    async deleteWithStock(id: number): Promise<DeleteLoanResult> {
+    async deleteWithStock(id: number): Promise<Loan | null> {
         return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const existing = await tx.loan.findUnique({ where: { id } });
 
             if (!existing) {
-                return { kind: "not-found" as const };
+                return null;
             }
 
             if (existing.returnDate === null) {
@@ -152,7 +133,7 @@ export class PrismaLoanRepository implements LoanRepository {
             }
 
             await tx.loan.delete({ where: { id }, select: { id: true } });
-            return { kind: "deleted" as const };
+            return existing;
         });
     }
 }
