@@ -1,7 +1,10 @@
 import { prisma } from "@src/lib/prisma.js";
 import type { Prisma, User } from "@src/generated/prisma/client.js";
+import type { UserRole } from "@src/shared/auth/roles.js";
 
-export type PublicUser = Pick<User, "id" | "email" | "username">;
+export type PublicUser = Pick<User, "id" | "email" | "username"> & {
+    role: UserRole;
+};
 
 export interface UserRepository {
     create(data: Prisma.UserCreateInput): Promise<PublicUser>;
@@ -16,6 +19,7 @@ const publicUserSelect = {
     id: true,
     email: true,
     username: true,
+    role: true,
 } as const;
 
 export class PrismaUserRepository implements UserRepository {

@@ -63,13 +63,14 @@ src/
 - id: Identificador único
 - email: Email único
 - username: Nome de usuário
-- passwordHash: Hash da senha
+- role: `ADMIN` ou `OPERATOR`
 
 ### Item (Item)
 - id: Identificador único
 - name: Nome do item
 - category: Categoria (opcional)
 - totalQuantity: Quantidade total
+- availableQuantity: Quantidade disponível para empréstimo
 - location: Localização
 
 ### Empréstimo (Loan)
@@ -78,7 +79,7 @@ src/
 - dueDate: Data de devolução prevista
 - returnDate: Data de devolução efetiva (opcional)
 - loanQuantity: Quantidade emprestada
-- userId: ID do usuário
+- clientId: ID do cliente
 - itemId: ID do item
 
 ### Token de Autenticação (AuthToken)
@@ -215,10 +216,13 @@ O servidor estará rodando em `http://localhost:3000`.
 - Nome: 2-50 caracteres obrigatório
 - Categoria: Opcional, máximo 30 caracteres
 - Quantidade: Inteiro não-negativo obrigatório
+- Quantidade disponível: Inteiro não-negativo e nunca maior que a quantidade total
 - Localização: Obrigatório, máximo 80 caracteres
 
 ### Empréstimo
 - Datas: Formato ISO 8601
+- `dueDate` posterior ou igual a `loanDate`
+- `returnDate` posterior ou igual a `loanDate`
 - Quantidade: Inteiro positivo
 
 ## Exemplos de Uso
@@ -255,7 +259,7 @@ Authorization: Bearer <access_token>
 Content-Type: application/json
 
 {
-  "userId": 1,
+  "clientId": 1,
   "itemId": 2,
   "loanDate": "2025-05-01T10:00:00Z",
   "dueDate": "2025-05-15T10:00:00Z",

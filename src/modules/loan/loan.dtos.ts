@@ -19,5 +19,5 @@ export type CreateLoanDTO = {
 export type UpdateLoanDTO = {
     loanDate?: string;
     dueDate?: string;
-    returnDate?: string;
+    returnDate?: string | null;
 };

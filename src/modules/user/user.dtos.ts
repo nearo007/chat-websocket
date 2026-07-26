@@ -1,6 +1,10 @@
+import type { UserRole } from "@src/shared/auth/roles.js";
+
 export type UserDTO = {
     username: string;
     email: string;
+    id: number;
+    role: UserRole;
 };
 
 export type CreateUserDTO = {

@@ -8,6 +8,7 @@ import {
 import { TokenService } from "@src/shared/services/token.service.js";
 import { Bcrypt } from "@src/shared/utils/bcrypt.js";
 import { Crypto } from "@src/shared/utils/crypto.js";
+import { AppError } from "@src/shared/errors/app.error.js";
 
 class AuthService {
     constructor(
@@ -23,7 +24,7 @@ class AuthService {
         const user = await this.authRepository.findUserByEmail(email);
 
         if (!user) {
-            throw new Error(MESSAGES.USER.AUTH.INCORRECT_CREDENTIALS);
+            throw new AppError(MESSAGES.USER.AUTH.INCORRECT_CREDENTIALS, 401);
         }
 
         const correctPassword = await Bcrypt.comparePassword(
@@ -32,7 +33,7 @@ class AuthService {
         );
 
         if (!correctPassword) {
-            throw new Error(MESSAGES.USER.AUTH.INCORRECT_CREDENTIALS);
+            throw new AppError(MESSAGES.USER.AUTH.INCORRECT_CREDENTIALS, 401);
         }
 
         const tokens = TokenService.generate({
@@ -60,7 +61,7 @@ class AuthService {
         );
 
         if (!token) {
-            throw new Error("Refresh token inválido");
+            throw new AppError("Refresh token inválido", 401);
         }
 
         const newTokens = TokenService.generate({
@@ -80,7 +81,7 @@ class AuthService {
         );
 
         if (!rotated) {
-            throw new Error("Refresh token inválido");
+            throw new AppError("Refresh token inválido", 401);
         }
 
         return newTokens;

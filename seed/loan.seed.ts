@@ -35,15 +35,24 @@ export async function seed() {
 
     const returnDate = cfg.returned ? new Date() : null;
 
-    await prisma.loan.create({
-      data: {
-        clientId: client.id,
-        itemId: item.id,
-        loanDate,
-        dueDate,
-        returnDate,
-        loanQuantity: cfg.loanQuantity,
-      },
+    await prisma.$transaction(async (tx) => {
+      await tx.loan.create({
+        data: {
+          clientId: client.id,
+          itemId: item.id,
+          loanDate,
+          dueDate,
+          returnDate,
+          loanQuantity: cfg.loanQuantity,
+        },
+      });
+
+      if (!cfg.returned) {
+        await tx.item.update({
+          where: { id: item.id },
+          data: { availableQuantity: { decrement: cfg.loanQuantity } },
+        });
+      }
     });
   }
 

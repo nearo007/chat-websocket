@@ -1,5 +1,6 @@
 import { MESSAGES } from "@src/constants/messages.js";
 import { Prisma } from "@src/generated/prisma/client.js";
+import { AppError } from "@src/shared/errors/app.error.js";
 
 export const handlePrismaError = (err: any): never => {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
@@ -21,18 +22,31 @@ export const handlePrismaError = (err: any): never => {
                     meta.driverAdapterError?.cause?.constraint?.fields;
                 const field = fields?.[0];
 
-                if (field === "email") {
-                    throw new Error(MESSAGES.USER.CONFLICT.EMAIL_EXISTS);
+                if (field === "email" && err.meta?.modelName === "Client") {
+                    throw new AppError(MESSAGES.CLIENT.CONFLICT.EMAIL_EXISTS, 409);
                 }
 
-                throw new Error("Conflito de restrição única.");
+                if (field === "email") {
+                    throw new AppError(MESSAGES.USER.CONFLICT.EMAIL_EXISTS, 409);
+                }
+
+                throw new AppError("Conflito de restrição única.", 409);
             }
-            case "P2025":
-                throw new Error(MESSAGES.USER.NOT_FOUND.GENERAL);
+            case "P2025": {
+                const modelName = err.meta?.modelName;
+                const message = modelName === "Item"
+                    ? MESSAGES.ITEM.NOT_FOUND.BY_ID
+                    : modelName === "Client"
+                        ? MESSAGES.CLIENT.NOT_FOUND.BY_ID
+                        : modelName === "Loan"
+                            ? MESSAGES.LOAN.NOT_FOUND.BY_ID
+                            : MESSAGES.USER.NOT_FOUND.BY_ID;
+                throw new AppError(message, 404);
+            }
             case "P2020":
-                throw new Error(MESSAGES.SHARED.VALIDATION.QUANTITY_INVALID);
+                throw new AppError(MESSAGES.SHARED.VALIDATION.QUANTITY_INVALID);
             default:
-                throw new Error(`Erro de banco de dados: ${err.code}`);
+                throw new AppError("Erro interno de banco de dados.", 500);
         }
     }
 

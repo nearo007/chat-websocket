@@ -1,6 +1,9 @@
 import type { Request, Response } from "express";
 import { loanService } from "@modules/loan/loan.service.js";
 import type { CreateLoanDTO, UpdateLoanDTO } from "@modules/loan/loan.dtos.js";
+import { IdValidator } from "@src/shared/utils/validators/id.validator.js";
+import { DateValidator } from "@src/shared/utils/validators/date.validator.js";
+import { MESSAGES } from "@src/constants/messages.js";
 
 class LoanController {
     async create(req: Request, res: Response) {
@@ -17,12 +20,14 @@ class LoanController {
 
     async getById(req: Request, res: Response) {
         const id = Number(req.params.id);
+        IdValidator.validate(id);
         const loan = await loanService.getById(id);
         return res.json(loan);
     }
 
     async updateById(req: Request, res: Response) {
         const loanId = Number(req.params.id);
+        IdValidator.validate(loanId);
         const data: UpdateLoanDTO = req.body;
 
         const updateData: {
@@ -31,16 +36,23 @@ class LoanController {
             returnDate?: Date | null;
         } = {};
 
-        if (data.loanDate) {
+        if (data.loanDate !== undefined) {
+            DateValidator.validate(data.loanDate, MESSAGES.FIELDS.LOAN_DATE);
             updateData.loanDate = new Date(data.loanDate);
         }
 
-        if (data.dueDate) {
+        if (data.dueDate !== undefined) {
+            DateValidator.validate(data.dueDate, MESSAGES.FIELDS.DUE_DATE);
             updateData.dueDate = new Date(data.dueDate);
         }
 
-        if (data.returnDate) {
-            updateData.returnDate = new Date(data.returnDate);
+        if (data.returnDate !== undefined) {
+            if (data.returnDate !== null) {
+                DateValidator.validate(data.returnDate, MESSAGES.FIELDS.RETURN_DATE);
+            }
+            updateData.returnDate = data.returnDate === null
+                ? null
+                : new Date(data.returnDate);
         }
 
         const loan = await loanService.updateById(loanId, updateData);
@@ -50,6 +62,7 @@ class LoanController {
 
     async deleteById(req: Request, res: Response) {
         const loanId = Number(req.params.id);
+        IdValidator.validate(loanId);
         await loanService.deleteById(loanId);
         return res.status(200).send();
     }

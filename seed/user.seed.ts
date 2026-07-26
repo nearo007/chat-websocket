@@ -5,11 +5,12 @@ type SeedUser = {
   username: string;
   email: string;
   password: string;
+  role: "ADMIN" | "OPERATOR";
 };
 
 const users: SeedUser[] = [
-  { username: "admin", email: "admin@fablab.pt", password: "admin123" },
-  { username: "user", email: "user@fablab.pt", password: "user123" },
+  { username: "admin", email: "admin@fablab.pt", password: "admin123", role: "ADMIN" },
+  { username: "user", email: "user@fablab.pt", password: "user123", role: "OPERATOR" },
 ];
 
 export async function seed() {
@@ -17,6 +18,7 @@ export async function seed() {
     users.map(async (u) => ({
       username: u.username,
       email: u.email,
+      role: u.role,
       passwordHash: await bcrypt.hash(u.password, 10),
     })),
   );

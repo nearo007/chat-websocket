@@ -1,4 +1,5 @@
 import { MESSAGES } from "@src/constants/messages.js";
+import { AppError } from "@src/shared/errors/app.error.js";
 
 export class QuantityValidator {
     static validate(
@@ -7,27 +8,27 @@ export class QuantityValidator {
         maxQuantity?: number,
     ) {
         if (quantity === null || quantity === undefined) {
-            throw new Error(MESSAGES.SHARED.VALIDATION.QUANTITY_REQUIRED);
+            throw new AppError(MESSAGES.SHARED.VALIDATION.QUANTITY_REQUIRED);
         }
 
         if (!Number.isFinite(quantity)) {
-            throw new Error(MESSAGES.SHARED.VALIDATION.QUANTITY_INVALID);
+            throw new AppError(MESSAGES.SHARED.VALIDATION.QUANTITY_INVALID);
         }
 
         const disallowNegative = minQuantity === 0;
 
         if (disallowNegative && quantity < 0) {
-            throw new Error(MESSAGES.SHARED.VALIDATION.QUANTITY_NEGATIVE);
+            throw new AppError(MESSAGES.SHARED.VALIDATION.QUANTITY_NEGATIVE);
         }
 
         if (quantity < minQuantity) {
-            throw new Error(
+            throw new AppError(
                 MESSAGES.SHARED.VALIDATION.QUANTITY_TOO_LOW(minQuantity),
             );
         }
 
         if (maxQuantity !== undefined && quantity > maxQuantity) {
-            throw new Error(
+            throw new AppError(
                 MESSAGES.SHARED.VALIDATION.QUANTITY_TOO_HIGH(maxQuantity),
             );
         }

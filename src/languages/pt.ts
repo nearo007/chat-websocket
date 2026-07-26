@@ -65,6 +65,10 @@ export const PT_MESSAGES = {
         VALIDATION: {
             QUANTITY_TOO_BIG: (num: number) =>
                 `Quantidade máxima disponível em estoque: ${num}.`,
+            DUE_DATE_BEFORE_LOAN:
+                "A data de vencimento deve ser posterior ou igual à data do empréstimo.",
+            RETURN_DATE_BEFORE_LOAN:
+                "A data de devolução deve ser posterior ou igual à data do empréstimo.",
         },
     },
     CLIENT: {
@@ -105,4 +109,3 @@ export const PT_MESSAGES = {
         DUE_DATE: "Data de Vencimento",
     },
 } as const;
-

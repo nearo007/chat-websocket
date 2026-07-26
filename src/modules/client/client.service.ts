@@ -4,6 +4,7 @@ import type {
     UpdateClientDTO,
 } from "./client.dtos.js";
 import { CreateClientValidator } from "./input-validation/create-client.validator.js";
+import { UpdateClientValidator } from "./input-validation/update-client.validator.js";
 import {
     PrismaClientRepository,
     type ClientRepository,
@@ -29,6 +30,7 @@ class ClientService {
     }
 
     async updateById(id: number, data: UpdateClientDTO): Promise<ClientDTO> {
+        UpdateClientValidator.validate(data);
         return this.clientRepository.update(id, data);
     }
 

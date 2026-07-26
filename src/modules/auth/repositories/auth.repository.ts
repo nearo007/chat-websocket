@@ -4,8 +4,11 @@ import type {
     Prisma,
     User,
 } from "@src/generated/prisma/client.js";
+import type { UserRole } from "@src/shared/auth/roles.js";
 
-export type AuthUser = Pick<User, "id" | "email" | "passwordHash">;
+export type AuthUser = Pick<User, "id" | "email" | "passwordHash"> & {
+    role: UserRole;
+};
 
 export type RefreshTokenData = Pick<
     AuthToken,
@@ -14,6 +17,7 @@ export type RefreshTokenData = Pick<
 
 export interface AuthRepository {
     findUserByEmail(email: string): Promise<AuthUser | null>;
+    findUserById(id: number): Promise<Pick<User, "id" | "role"> | null>;
     createRefreshToken(data: RefreshTokenData): Promise<void>;
     findValidRefreshToken(
         refreshTokenHash: string,
@@ -30,6 +34,7 @@ const authUserSelect = {
     id: true,
     email: true,
     passwordHash: true,
+    role: true,
 } as const;
 
 export class PrismaAuthRepository implements AuthRepository {
@@ -37,6 +42,13 @@ export class PrismaAuthRepository implements AuthRepository {
         return prisma.user.findUnique({
             where: { email },
             select: authUserSelect,
+        });
+    }
+
+    findUserById(id: number) {
+        return prisma.user.findUnique({
+            where: { id },
+            select: { id: true, role: true },
         });
     }
 

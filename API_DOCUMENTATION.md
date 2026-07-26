@@ -44,7 +44,7 @@ Retorna `401` se estiver ausente/expirado.
 
 | Método | Caminho | Auth | Corpo obrigatório | Corpo opcional | Resposta |
 |--------|---------|------|-------------------|----------------|----------|
-| `POST` | `/user/create` | Não | `username`, `email`, `password`, `passwordConfirm` | — | `User` |
+| `POST` | `/user` | Não | `username`, `email`, `password`, `passwordConfirm` | — | `User` |
 | `GET` | `/user/` | Sim | — | — | `User[]` |
 | `GET` | `/user/:id` | Sim | — | — | `User` |
 | `PATCH` | `/user/:id` | Sim | — | `username`, `email` | `User` |
@@ -54,21 +54,21 @@ Retorna `401` se estiver ausente/expirado.
 
 | Método | Caminho | Auth | Corpo obrigatório | Corpo opcional | Resposta |
 |--------|---------|------|-------------------|----------------|----------|
-| `POST` | `/item/create` | Sim | `name`, `totalQuantity`, `location` | `category` | `Item` |
+| `POST` | `/item` | Sim | `name`, `totalQuantity`, `location` | `category`, `availableQuantity` | `Item` |
 | `GET` | `/item/` | Sim | — | — | `Item[]` |
-| `GET` | `/item/by-category` | Sim | `category` (no corpo) | — | `Item[]` |
-| `GET` | `/item/by-location` | Sim | `location` (no corpo) | — | `Item[]` |
+| `GET` | `/item/by-category?category=...` | Sim | `category` (query) | — | `Item[]` |
+| `GET` | `/item/by-location?location=...` | Sim | `location` (query) | — | `Item[]` |
 | `GET` | `/item/:id` | Sim | — | — | `Item` |
 | `PATCH` | `/item/:id` | Sim | — | `name`, `category`, `totalQuantity`, `location` | `Item` |
 | `DELETE` | `/item/:id` | Sim | — | — | `Item` |
 
-> ⚠️ `by-category` e `by-location` são endpoints `GET` mas leem o filtro do **corpo da requisição** (não padrão).
+Os filtros são enviados como parâmetros de query.
 
 ### Clientes (`/client`)
 
 | Método | Caminho | Auth | Corpo obrigatório | Corpo opcional | Resposta |
 |--------|---------|------|-------------------|----------------|----------|
-| `POST` | `/client/create` | Sim | `name`, `email` | `phone` | `Client` |
+| `POST` | `/client` | Sim | `name`, `email` | `phone` | `Client` |
 | `GET` | `/client/` | Sim | — | — | `Client[]` |
 | `GET` | `/client/:id` | Sim | — | — | `Client` |
 | `PATCH` | `/client/:id` | Sim | — | `name`, `email`, `phone` | `Client` |
@@ -78,7 +78,7 @@ Retorna `401` se estiver ausente/expirado.
 
 | Método | Caminho | Auth | Corpo obrigatório | Corpo opcional | Resposta |
 |--------|---------|------|-------------------|----------------|----------|
-| `POST` | `/loan/create` | Sim | `clientId`, `itemId`, `loanDate`, `dueDate`, `loanQuantity` | `returnDate` | `Loan` |
+| `POST` | `/loan` | Sim | `clientId`, `itemId`, `loanDate`, `dueDate`, `loanQuantity` | `returnDate` | `Loan` |
 | `GET` | `/loan/` | Sim | — | — | `Loan[]` |
 | `GET` | `/loan/:id` | Sim | — | — | `Loan` |
 | `PATCH` | `/loan/:id` | Sim | — | `loanDate`, `dueDate`, `returnDate` | `Loan` |
@@ -90,7 +90,7 @@ Retorna `401` se estiver ausente/expirado.
 
 ### Usuário
 ```ts
-{ id: number, email: string, username: string, passwordHash: string }
+{ id: number, email: string, username: string, role: "ADMIN" | "OPERATOR" }
 ```
 
 ### Cliente
@@ -100,7 +100,7 @@ Retorna `401` se estiver ausente/expirado.
 
 ### Item
 ```ts
-{ id: number, name: string, category: string | null, totalQuantity: number, location: string }
+{ id: number, name: string, category: string | null, totalQuantity: number, availableQuantity: number, location: string }
 ```
 
 ### Empréstimo
@@ -131,6 +131,7 @@ Retorna `401` se estiver ausente/expirado.
 | `location` | Máx. 80 caracteres |
 | `phone` | 10–11 dígitos |
 | `totalQuantity` | ≥ 0 |
+| `availableQuantity` | ≥ 0 e ≤ `totalQuantity` |
 | `loanQuantity` | ≥ 1, não pode exceder `totalQuantity` do item |
 | `id` (parâmetro) | Número inteiro positivo |
 | Datas | String ISO 8601 (ex.: `"2025-01-15"`) |

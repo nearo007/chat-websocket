@@ -3,8 +3,10 @@ import type {
     LoanDTO,
 } from "@modules/loan/loan.dtos.js";
 import { CreateLoanValidator } from "./input-validation/create-loan.validator.js";
+import { UpdateLoanValidator } from "./input-validation/update-loan.validator.js";
 import { MESSAGES } from "@src/constants/messages.js";
 import { InsufficientStockError } from "@src/shared/errors/insufficient-stock.error.js";
+import { AppError } from "@src/shared/errors/app.error.js";
 import {
     PrismaLoanRepository,
     type LoanRepository,
@@ -30,13 +32,13 @@ class LoanService {
             });
 
             if (!loan) {
-                throw new Error(MESSAGES.ITEM.NOT_FOUND.GENERAL);
+                throw new AppError(MESSAGES.ITEM.NOT_FOUND.GENERAL, 404);
             }
 
             return loan;
         } catch (error) {
             if (error instanceof InsufficientStockError) {
-                throw new Error(
+                throw new AppError(
                     MESSAGES.LOAN.VALIDATION.QUANTITY_TOO_BIG(
                         error.availableQuantity,
                     ),
@@ -63,17 +65,24 @@ class LoanService {
             returnDate?: Date | null;
         },
     ): Promise<LoanDTO> {
+        const existing = await this.loanRepository.findById(id);
+        if (!existing) {
+            throw new AppError(MESSAGES.LOAN.NOT_FOUND.BY_ID, 404);
+        }
+
+        UpdateLoanValidator.validate(data, existing);
+
         try {
             const loan = await this.loanRepository.updateWithStock(id, data);
 
             if (!loan) {
-                throw new Error(MESSAGES.LOAN.NOT_FOUND.BY_ID);
+                throw new AppError(MESSAGES.LOAN.NOT_FOUND.BY_ID, 404);
             }
 
             return loan;
         } catch (error) {
             if (error instanceof InsufficientStockError) {
-                throw new Error(
+                throw new AppError(
                     MESSAGES.LOAN.VALIDATION.QUANTITY_TOO_BIG(
                         error.availableQuantity,
                     ),
@@ -88,7 +97,7 @@ class LoanService {
         const loan = await this.loanRepository.deleteWithStock(id);
 
         if (!loan) {
-            throw new Error(MESSAGES.LOAN.NOT_FOUND.BY_ID);
+            throw new AppError(MESSAGES.LOAN.NOT_FOUND.BY_ID, 404);
         }
     }
 }

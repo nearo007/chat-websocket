@@ -11,7 +11,9 @@ import {
     PrismaUserRepository,
     type UserRepository,
 } from "@src/modules/user/repositories/user.repository.js";
+import { EmailValidator } from "@src/shared/utils/validators/email.validator.js";
 import { PasswordValidator } from "@src/shared/utils/validators/password.validator.js";
+import { UsernameValidator } from "@src/shared/utils/validators/username.validator.js";
 
 class UserService {
     constructor(
@@ -42,6 +44,8 @@ class UserService {
     }
 
     async updateById(id: number, data: UpdateUserDTO): Promise<UserDTO> {
+        if (data.email !== undefined) EmailValidator.validate(data.email);
+        if (data.username !== undefined) UsernameValidator.validate(data.username);
         return this.userRepository.update(id, data);
     }
 

@@ -1,6 +1,7 @@
 import { MESSAGES } from "@src/constants/messages.js";
 import type { CreateItemDTO } from "@modules/item/item.dtos.js";
 import { QuantityValidator } from "@src/shared/utils/validators/quantity.validator.js";
+import { AppError } from "@src/shared/errors/app.error.js";
 
 export class CreateItemValidator {
     static validate(data: CreateItemDTO) {
@@ -16,24 +17,24 @@ export class CreateItemValidator {
         const availableQuantity = data.availableQuantity;
 
         if (!name) {
-            throw new Error(MESSAGES.ITEM.VALIDATION.NAME_REQUIRED);
+            throw new AppError(MESSAGES.ITEM.VALIDATION.NAME_REQUIRED);
         }
 
         if (name.length < minNameLength) {
-            throw new Error(
+            throw new AppError(
                 MESSAGES.ITEM.VALIDATION.NAME_TOO_SHORT(minNameLength),
             );
         }
 
         if (name.length > maxNameLength) {
-            throw new Error(
+            throw new AppError(
                 MESSAGES.ITEM.VALIDATION.NAME_TOO_LONG(maxNameLength),
             );
         }
 
         if (category) {
             if (category.length > maxCategoryLength) {
-                throw new Error(
+                throw new AppError(
                     MESSAGES.ITEM.VALIDATION.CATEGORY_TOO_LONG(
                         maxCategoryLength,
                     ),
@@ -50,7 +51,7 @@ export class CreateItemValidator {
 
             if (totalQuantity !== undefined) {
                 if (availableQuantity > totalQuantity) {
-                    throw new Error(
+                    throw new AppError(
                         MESSAGES.ITEM.VALIDATION
                             .AVAILABLE_QUANTITY_EXCEEDS_TOTAL,
                     );
@@ -59,11 +60,11 @@ export class CreateItemValidator {
         }
 
         if (!location) {
-            throw new Error(MESSAGES.ITEM.VALIDATION.LOCATION_REQUIRED);
+            throw new AppError(MESSAGES.ITEM.VALIDATION.LOCATION_REQUIRED);
         }
 
         if (location.length > maxLocationLength) {
-            throw new Error(
+            throw new AppError(
                 MESSAGES.ITEM.VALIDATION.LOCATION_TOO_LONG(maxLocationLength),
             );
         }

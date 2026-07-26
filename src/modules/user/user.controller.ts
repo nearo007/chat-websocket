@@ -1,8 +1,7 @@
 import type { Request, Response } from "express";
-import { EmailValidator } from "@shared/utils/validators/email.validator.js";
 import { userService } from "@modules/user/user.service.js";
 import type { CreateUserDTO, UpdateUserDTO } from "@modules/user/user.dtos.js";
-import { UsernameValidator } from "@shared/utils/validators/username.validator.js";
+import { IdValidator } from "@src/shared/utils/validators/id.validator.js";
 
 class UserController {
     async create(req: Request, res: Response) {
@@ -19,16 +18,15 @@ class UserController {
 
     async getById(req: Request, res: Response) {
         const id = Number(req.params.id);
+        IdValidator.validate(id);
         const user = await userService.getById(id);
         return res.status(200).json(user);
     }
 
     async updateById(req: Request, res: Response) {
         const userId = Number(req.params.id);
+        IdValidator.validate(userId);
         const data: UpdateUserDTO = req.body;
-
-        if (data.email) EmailValidator.validate(data.email);
-        if (data.username) UsernameValidator.validate(data.username);
 
         const user = await userService.updateById(userId, data);
         return res.status(200).json(user);
@@ -36,6 +34,7 @@ class UserController {
 
     async deleteById(req: Request, res: Response) {
         const userId = Number(req.params.id);
+        IdValidator.validate(userId);
         await userService.deleteById(userId);
         return res.status(200).send();
     }

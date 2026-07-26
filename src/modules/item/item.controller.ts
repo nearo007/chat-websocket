@@ -6,6 +6,7 @@ import type {
     ListByLocationDTO,
     UpdateItemDTO,
 } from "@modules/item/item.dtos.js";
+import { IdValidator } from "@src/shared/utils/validators/id.validator.js";
 
 class ItemController {
     async create(req: Request, res: Response) {
@@ -22,19 +23,24 @@ class ItemController {
 
     async getById(req: Request, res: Response) {
         const id = Number(req.params.id);
+        IdValidator.validate(id);
         const item = await itemService.getById(id);
         return res.status(200).json(item);
     }
 
     async listByCategory(req: Request, res: Response) {
-        const category: ListByCategoryDTO = req.body;
+        const category: ListByCategoryDTO = {
+            category: String(req.query.category ?? ""),
+        };
         const items = await itemService.listByCategory(category);
 
         return res.status(200).json(items);
     }
 
     async listByLocation(req: Request, res: Response) {
-        const location: ListByLocationDTO = req.body;
+        const location: ListByLocationDTO = {
+            location: String(req.query.location ?? ""),
+        };
         const items = await itemService.listByLocation(location);
 
         return res.status(200).json(items);
@@ -42,6 +48,7 @@ class ItemController {
 
     async updateById(req: Request, res: Response) {
         const itemId = Number(req.params.id);
+        IdValidator.validate(itemId);
         const data: UpdateItemDTO = req.body;
 
         const item = await itemService.updateById(itemId, data);
@@ -50,6 +57,7 @@ class ItemController {
 
     async deleteById(req: Request, res: Response) {
         const itemId = Number(req.params.id);
+        IdValidator.validate(itemId);
         const item = await itemService.deleteById(itemId);
         return res.status(200).json(item);
     }
@@ -57,4 +65,3 @@ class ItemController {
 
 const itemController = new ItemController();
 export { itemController };
-
