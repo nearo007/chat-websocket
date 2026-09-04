@@ -1,10 +1,17 @@
 export type LoanDTO = {
+    id: number;
     clientId: number;
     itemId: number;
     loanDate: Date;
     dueDate: Date;
     loanQuantity: number;
     returnDate: Date | null;
+    cancelledAt: Date | null;
+    createdById: number | null;
+    returnedById: number | null;
+    cancelledById: number | null;
+    createdAt: Date;
+    updatedAt: Date;
 };
 
 export type CreateLoanDTO = {
@@ -13,7 +20,7 @@ export type CreateLoanDTO = {
     loanDate: string;
     dueDate: string;
     loanQuantity: number;
-    returnDate?: string;
+    returnDate?: string | null;
 };
 
 export type UpdateLoanDTO = {

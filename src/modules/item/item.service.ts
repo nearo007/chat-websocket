@@ -5,23 +5,29 @@ import type {
     ListByLocationDTO,
     UpdateItemDTO,
 } from "@modules/item/item.dtos.js";
+import { MESSAGES } from "@src/constants/messages.js";
 import { CreateItemValidator } from "@src/modules/item/input-validation/create-item.validator.js";
 import {
-    PrismaItemRepository,
     type ItemRepository,
+    PrismaItemRepository,
 } from "@src/modules/item/repositories/item.repository.js";
+import { AppError } from "@src/shared/errors/app.error.js";
+import {
+    InventoryCapacityError,
+    InventoryInvariantError,
+} from "@src/shared/errors/inventory-capacity.error.js";
+import type { Pagination } from "@src/shared/validation/fields.js";
 
-class ItemService {
-    constructor(
-        private readonly itemRepository: ItemRepository =
-            new PrismaItemRepository(),
-    ) {}
+export class ItemService {
+    constructor(private readonly itemRepository: ItemRepository = new PrismaItemRepository()) {}
 
     async create(data: CreateItemDTO): Promise<ItemDTO> {
-        const totalQuantity = data.totalQuantity ?? 0;
-        const availableQuantity = data.availableQuantity ?? totalQuantity;
+        const totalQuantity = data.totalQuantity;
+        const availableQuantity = totalQuantity;
         const normalizedData = {
-            ...data,
+            name: data.name,
+            ...(data.category !== undefined ? { category: data.category } : {}),
+            location: data.location,
             totalQuantity,
             availableQuantity,
         };
@@ -31,45 +37,64 @@ class ItemService {
         return this.itemRepository.create(normalizedData);
     }
 
-    async list(): Promise<ItemDTO[]> {
-        return this.itemRepository.list();
+    async list(options: Pagination & { search?: string }): Promise<ItemDTO[]> {
+        return this.itemRepository.list(options);
     }
 
-    async getById(id: number): Promise<ItemDTO | null> {
-        return this.itemRepository.findById(id);
+    async getById(id: number): Promise<ItemDTO> {
+        const item = await this.itemRepository.findById(id);
+        if (!item) throw new AppError(MESSAGES.ITEM.NOT_FOUND.BY_ID, 404, "ITEM_NOT_FOUND");
+        return item;
     }
 
-    async listByCategory({ category }: ListByCategoryDTO): Promise<ItemDTO[]> {
-        return this.itemRepository.listByCategory(category);
+    async listByCategory(
+        { category }: ListByCategoryDTO,
+        pagination: Pagination,
+    ): Promise<ItemDTO[]> {
+        return this.itemRepository.listByCategory(category, pagination);
     }
 
-    async listByLocation({ location }: ListByLocationDTO): Promise<ItemDTO[]> {
-        return this.itemRepository.listByLocation(location);
+    async listByLocation(
+        { location }: ListByLocationDTO,
+        pagination: Pagination,
+    ): Promise<ItemDTO[]> {
+        return this.itemRepository.listByLocation(location, pagination);
     }
 
-    async updateById(id: number, data: UpdateItemDTO): Promise<ItemDTO> {
-        const existing = await this.itemRepository.findById(id);
-        if (!existing) {
-            return this.itemRepository.update(id, data);
+    async updateById(id: number, data: UpdateItemDTO, actorId: number): Promise<ItemDTO> {
+        if (data.totalQuantity !== undefined && !data.adjustmentReason) {
+            throw new AppError(
+                "Informe o motivo da alteração de quantidade.",
+                400,
+                "ADJUSTMENT_REASON_REQUIRED",
+            );
         }
-
-        const validationData: CreateItemDTO = {
-            name: data.name ?? existing.name,
-            totalQuantity: data.totalQuantity ?? existing.totalQuantity,
-            availableQuantity:
-                data.availableQuantity ?? existing.availableQuantity,
-            location: data.location ?? existing.location,
-        };
-
-        if (data.category !== undefined) {
-            validationData.category = data.category;
-        } else if (existing.category !== null) {
-            validationData.category = existing.category;
+        try {
+            const item = await this.itemRepository.updateWithStockInvariant(id, data, actorId);
+            if (!item) throw new AppError(MESSAGES.ITEM.NOT_FOUND.BY_ID, 404, "ITEM_NOT_FOUND");
+            return item;
+        } catch (error) {
+            if (error instanceof InventoryCapacityError) {
+                throw new AppError(
+                    `A quantidade total não pode ser menor que as ${error.borrowedQuantity} unidades emprestadas.`,
+                    409,
+                    "ITEM_HAS_BORROWED_UNITS",
+                );
+            }
+            if (error instanceof InventoryInvariantError) {
+                throw new AppError(
+                    "O estoque está inconsistente e precisa de reconciliação.",
+                    409,
+                    "INVENTORY_INCONSISTENT",
+                );
+            }
+            throw error;
         }
+    }
 
-        CreateItemValidator.validate(validationData);
-
-        return this.itemRepository.update(id, data);
+    async listAdjustments(id: number, pagination: Pagination) {
+        await this.getById(id);
+        return this.itemRepository.listAdjustments(id, pagination);
     }
 
     async deleteById(id: number): Promise<void> {
@@ -78,4 +103,5 @@ class ItemService {
 }
 
 const itemService = new ItemService();
+
 export { itemService };

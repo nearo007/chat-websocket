@@ -2,19 +2,20 @@ import type { LoginDTO, TokensDTO } from "@modules/auth/auth.dtos.js";
 import { MESSAGES } from "@src/constants/messages.js";
 import { LoginValidator } from "@src/modules/auth/input-validation/login.validator.js";
 import {
-    PrismaAuthRepository,
     type AuthRepository,
+    PrismaAuthRepository,
 } from "@src/modules/auth/repositories/auth.repository.js";
+import { AppError } from "@src/shared/errors/app.error.js";
 import { TokenService } from "@src/shared/services/token.service.js";
 import { Bcrypt } from "@src/shared/utils/bcrypt.js";
 import { Crypto } from "@src/shared/utils/crypto.js";
-import { AppError } from "@src/shared/errors/app.error.js";
 
-class AuthService {
-    constructor(
-        private readonly authRepository: AuthRepository =
-            new PrismaAuthRepository(),
-    ) {}
+// Keep the same cost as newly generated password hashes so unknown-user logins
+// take approximately the same time as wrong-password logins.
+const DUMMY_PASSWORD_HASH = "$2b$12$Q26ef2ECkwwE/H4/RD4r1eaU4SC9wk3pGRMUJh2JfNsmWWgJdvkr6";
+
+export class AuthService {
+    constructor(private readonly authRepository: AuthRepository = new PrismaAuthRepository()) {}
 
     async login(data: LoginDTO): Promise<TokensDTO> {
         LoginValidator.validate(data);
@@ -24,16 +25,22 @@ class AuthService {
         const user = await this.authRepository.findUserByEmail(email);
 
         if (!user) {
-            throw new AppError(MESSAGES.USER.AUTH.INCORRECT_CREDENTIALS, 401);
+            await Bcrypt.comparePassword(password, DUMMY_PASSWORD_HASH);
+            throw new AppError(
+                MESSAGES.USER.AUTH.INCORRECT_CREDENTIALS,
+                401,
+                "INCORRECT_CREDENTIALS",
+            );
         }
 
-        const correctPassword = await Bcrypt.comparePassword(
-            password,
-            user.passwordHash,
-        );
+        const correctPassword = await Bcrypt.comparePassword(password, user.passwordHash);
 
         if (!correctPassword) {
-            throw new AppError(MESSAGES.USER.AUTH.INCORRECT_CREDENTIALS, 401);
+            throw new AppError(
+                MESSAGES.USER.AUTH.INCORRECT_CREDENTIALS,
+                401,
+                "INCORRECT_CREDENTIALS",
+            );
         }
 
         const tokens = TokenService.generate({
@@ -42,26 +49,31 @@ class AuthService {
 
         const hashedRefreshToken = Crypto.hashToken(tokens.refreshToken);
 
+        await this.authRepository.deleteExpiredRefreshTokens(new Date());
         await this.authRepository.createRefreshToken({
             userId: user.id,
             refreshTokenHash: hashedRefreshToken,
-            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // TODO: move to env
+            expiresAt: tokens.refreshExpiresAt,
         });
 
-        return tokens;
+        return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken };
     }
 
     async refresh(refreshToken: string): Promise<TokensDTO> {
+        let payload: ReturnType<typeof TokenService.verifyRefresh>;
+        try {
+            payload = TokenService.verifyRefresh(refreshToken);
+        } catch {
+            throw new AppError("Refresh token inválido", 401, "REFRESH_TOKEN_INVALID");
+        }
+
         const hashed = Crypto.hashToken(refreshToken);
         const now = new Date();
 
-        const token = await this.authRepository.findValidRefreshToken(
-            hashed,
-            now,
-        );
+        const token = await this.authRepository.findValidRefreshToken(hashed, now);
 
-        if (!token) {
-            throw new AppError("Refresh token inválido", 401);
+        if (!token || String(token.userId) !== payload.sub) {
+            throw new AppError("Refresh token inválido", 401, "REFRESH_TOKEN_INVALID");
         }
 
         const newTokens = TokenService.generate({
@@ -73,20 +85,30 @@ class AuthService {
             {
                 userId: token.userId,
                 refreshTokenHash: Crypto.hashToken(newTokens.refreshToken),
-                expiresAt: new Date(
-                    Date.now() + 7 * 24 * 60 * 60 * 1000,
-                ), // TODO: move to env
+                expiresAt: newTokens.refreshExpiresAt,
             },
             now,
         );
 
         if (!rotated) {
-            throw new AppError("Refresh token inválido", 401);
+            throw new AppError("Refresh token inválido", 401, "REFRESH_TOKEN_INVALID");
         }
 
-        return newTokens;
+        return {
+            accessToken: newTokens.accessToken,
+            refreshToken: newTokens.refreshToken,
+        };
+    }
+
+    async logout(refreshToken: string): Promise<void> {
+        await this.authRepository.revokeRefreshToken(Crypto.hashToken(refreshToken));
+    }
+
+    async logoutAll(userId: number): Promise<void> {
+        await this.authRepository.revokeAllRefreshTokens(userId);
     }
 }
 
 const authService = new AuthService();
+
 export { authService };

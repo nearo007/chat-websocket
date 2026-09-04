@@ -1,10 +1,5 @@
+import type { Client, Item, Loan, Prisma } from "@src/generated/prisma/client.js";
 import { prisma } from "@src/lib/prisma.js";
-import type {
-    Client,
-    Item,
-    Loan,
-    Prisma,
-} from "@src/generated/prisma/client.js";
 
 export type ClientLoanHistory = Client & {
     loans: Array<Loan & { item: Item }>;
@@ -12,10 +7,13 @@ export type ClientLoanHistory = Client & {
 
 export interface ClientRepository {
     create(data: Prisma.ClientCreateInput): Promise<Client>;
-    list(): Promise<Client[]>;
+    list(options: { skip: number; take: number; search?: string }): Promise<Client[]>;
     findById(id: number): Promise<Client | null>;
     update(id: number, data: Prisma.ClientUpdateInput): Promise<Client>;
-    getLoanHistory(id: number): Promise<ClientLoanHistory | null>;
+    getLoanHistory(
+        id: number,
+        pagination: { skip: number; take: number },
+    ): Promise<ClientLoanHistory | null>;
     delete(id: number): Promise<void>;
 }
 
@@ -24,8 +22,22 @@ export class PrismaClientRepository implements ClientRepository {
         return prisma.client.create({ data });
     }
 
-    list() {
-        return prisma.client.findMany();
+    list({ skip, take, search }: { skip: number; take: number; search?: string }) {
+        return prisma.client.findMany({
+            ...(search
+                ? {
+                      where: {
+                          OR: [
+                              { name: { contains: search, mode: "insensitive" } },
+                              { email: { contains: search, mode: "insensitive" } },
+                          ],
+                      },
+                  }
+                : {}),
+            orderBy: { id: "asc" },
+            skip,
+            take,
+        });
     }
 
     findById(id: number) {
@@ -36,13 +48,15 @@ export class PrismaClientRepository implements ClientRepository {
         return prisma.client.update({ where: { id }, data });
     }
 
-    getLoanHistory(id: number) {
+    getLoanHistory(id: number, { skip, take }: { skip: number; take: number }) {
         return prisma.client.findUnique({
             where: { id },
             include: {
                 loans: {
                     include: { item: true },
                     orderBy: { loanDate: "desc" },
+                    skip,
+                    take,
                 },
             },
         });

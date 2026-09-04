@@ -1,10 +1,10 @@
-import { MESSAGES } from "@src/constants/messages.js";
 import type { CreateItemDTO } from "@modules/item/item.dtos.js";
-import { QuantityValidator } from "@src/shared/utils/validators/quantity.validator.js";
+import { MESSAGES } from "@src/constants/messages.js";
 import { AppError } from "@src/shared/errors/app.error.js";
+import { QuantityValidator } from "@src/shared/utils/validators/quantity.validator.js";
 
 export class CreateItemValidator {
-    static validate(data: CreateItemDTO) {
+    static validate(data: CreateItemDTO & { availableQuantity: number }) {
         const minNameLength = 2;
         const maxNameLength = 50;
         const maxCategoryLength = 30;
@@ -21,24 +21,16 @@ export class CreateItemValidator {
         }
 
         if (name.length < minNameLength) {
-            throw new AppError(
-                MESSAGES.ITEM.VALIDATION.NAME_TOO_SHORT(minNameLength),
-            );
+            throw new AppError(MESSAGES.ITEM.VALIDATION.NAME_TOO_SHORT(minNameLength));
         }
 
         if (name.length > maxNameLength) {
-            throw new AppError(
-                MESSAGES.ITEM.VALIDATION.NAME_TOO_LONG(maxNameLength),
-            );
+            throw new AppError(MESSAGES.ITEM.VALIDATION.NAME_TOO_LONG(maxNameLength));
         }
 
         if (category) {
             if (category.length > maxCategoryLength) {
-                throw new AppError(
-                    MESSAGES.ITEM.VALIDATION.CATEGORY_TOO_LONG(
-                        maxCategoryLength,
-                    ),
-                );
+                throw new AppError(MESSAGES.ITEM.VALIDATION.CATEGORY_TOO_LONG(maxCategoryLength));
             }
         }
 
@@ -51,10 +43,7 @@ export class CreateItemValidator {
 
             if (totalQuantity !== undefined) {
                 if (availableQuantity > totalQuantity) {
-                    throw new AppError(
-                        MESSAGES.ITEM.VALIDATION
-                            .AVAILABLE_QUANTITY_EXCEEDS_TOTAL,
-                    );
+                    throw new AppError(MESSAGES.ITEM.VALIDATION.AVAILABLE_QUANTITY_EXCEEDS_TOTAL);
                 }
             }
         }
@@ -64,9 +53,7 @@ export class CreateItemValidator {
         }
 
         if (location.length > maxLocationLength) {
-            throw new AppError(
-                MESSAGES.ITEM.VALIDATION.LOCATION_TOO_LONG(maxLocationLength),
-            );
+            throw new AppError(MESSAGES.ITEM.VALIDATION.LOCATION_TOO_LONG(maxLocationLength));
         }
     }
 }

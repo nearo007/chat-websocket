@@ -22,13 +22,9 @@ export class UsernameValidator {
         }
 
         if (value.length < minLength) {
-            throw new AppError(
-                MESSAGES.USER.VALIDATION.USERNAME_TOO_SHORT(minLength),
-            );
+            throw new AppError(MESSAGES.USER.VALIDATION.USERNAME_TOO_SHORT(minLength));
         } else if (value.length > maxLength) {
-            throw new AppError(
-                MESSAGES.USER.VALIDATION.USERNAME_TOO_LONG(maxLength),
-            );
+            throw new AppError(MESSAGES.USER.VALIDATION.USERNAME_TOO_LONG(maxLength));
         }
     }
 }

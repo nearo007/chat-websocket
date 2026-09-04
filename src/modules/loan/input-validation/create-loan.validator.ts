@@ -1,9 +1,9 @@
 import type { CreateLoanDTO } from "@modules/loan/loan.dtos.js";
 import { MESSAGES } from "@src/constants/messages.js";
+import { AppError } from "@src/shared/errors/app.error.js";
 import { DateValidator } from "@src/shared/utils/validators/date.validator.js";
 import { IdValidator } from "@src/shared/utils/validators/id.validator.js";
 import { QuantityValidator } from "@src/shared/utils/validators/quantity.validator.js";
-import { AppError } from "@src/shared/errors/app.error.js";
 
 export class CreateLoanValidator {
     static validate(data: CreateLoanDTO) {

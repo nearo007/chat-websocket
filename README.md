@@ -1,268 +1,173 @@
 # Sistema de Inventário FabLab
 
-Um sistema de gerenciamento de inventário para FabLabs, desenvolvido em Node.js com TypeScript, Express e Prisma. Permite o controle de usuários, itens de inventário e empréstimos de itens.
+API REST para gerir usuários, clientes, itens e empréstimos de um FabLab. Desenvolvida com Node.js, TypeScript, Express, Prisma e PostgreSQL.
 
-## Tecnologias Utilizadas
+## Requisitos
 
-- **Runtime**: Node.js
-- **Linguagem**: TypeScript
-- **Framework**: Express.js
-- **ORM**: Prisma
-- **Banco de Dados**: PostgreSQL
-- **Autenticação**: JWT (JSON Web Tokens)
-- **Segurança**: bcrypt para hash de senhas
-- **Containerização**: Docker Compose
-- **Outros**: CORS, dotenv
+- Node.js `^20.19`, `^22.12` ou `>=24`
+- npm 10+
+- Docker com Compose, ou uma instância PostgreSQL 18
 
-## Funcionalidades
+## Configuração local
 
-- **Gerenciamento de Usuários**: Cadastro, autenticação e atualização de perfis
-- **Controle de Inventário**: Adição, atualização e remoção de itens
-- **Sistema de Empréstimos**: Registro de empréstimos com datas de devolução
-- **Autenticação JWT**: Tokens de acesso e refresh para segurança
-- **Validação de Dados**: Validações robustas em todas as entradas
-- **Tratamento de Erros**: Mensagens de erro padronizadas em português
-
-## Arquitetura
-
-O projeto segue uma arquitetura modular MVC com separação clara de responsabilidades:
-
-- **Controllers**: Manipulam requisições HTTP
-- **Services**: Contêm lógica de negócio
-- **Routes**: Definem endpoints da API
-- **DTOs**: Tipos TypeScript para dados
-- **Validators**: Validação de entrada
-- **Middlewares**: Autenticação e tratamento de erros
-
-## Estrutura do Projeto
-
-```
-src/
-├── app.ts                 # Configuração do Express
-├── server.ts              # Ponto de entrada do servidor
-├── @types/                # Extensões de tipos TypeScript
-├── constants/messages.ts  # Mensagens de erro/sucesso
-├── languages/pt.ts        # Localização em português
-├── lib/prisma.ts          # Instância do cliente Prisma
-├── middlewares/
-│   ├── authMiddleware.ts  # Verificação JWT
-│   └── errorHandler.ts    # Tratamento global de erros
-├── modules/
-│   ├── auth/              # Módulo de autenticação
-│   ├── user/              # Módulo de usuários
-│   ├── item/              # Módulo de itens
-│   └── loan/              # Módulo de empréstimos
-└── shared/
-    ├── services/token.service.ts  # Geração de tokens JWT
-    └── utils/                     # Utilitários (bcrypt, crypto, validações)
-```
-
-## Modelo de Dados
-
-### Usuário (User)
-- id: Identificador único
-- email: Email único
-- username: Nome de usuário
-- role: `ADMIN` ou `OPERATOR`
-
-### Item (Item)
-- id: Identificador único
-- name: Nome do item
-- category: Categoria (opcional)
-- totalQuantity: Quantidade total
-- availableQuantity: Quantidade disponível para empréstimo
-- location: Localização
-
-### Empréstimo (Loan)
-- id: Identificador único
-- loanDate: Data do empréstimo
-- dueDate: Data de devolução prevista
-- returnDate: Data de devolução efetiva (opcional)
-- loanQuantity: Quantidade emprestada
-- clientId: ID do cliente
-- itemId: ID do item
-
-### Token de Autenticação (AuthToken)
-- id: Identificador único
-- userId: ID do usuário
-- refreshTokenHash: Hash do token de refresh
-- expiresAt: Data de expiração
-- revoked: Status de revogação
-
-## Instalação e Execução
-
-### Pré-requisitos
-
-- Node.js (versão 18 ou superior)
-- Docker e Docker Compose
-- npm ou yarn
-
-### Passos de Instalação
-
-1. **Clone o repositório e navegue até a pasta:**
-   ```bash
-   cd /home/nearo/projects/sistema-inventario-fablab
-   ```
-
-2. **Instale as dependências:**
-   ```bash
-   npm install
-   ```
-
-3. **Configure as variáveis de ambiente:**
-   
-   Crie um arquivo `.env` na raiz do projeto com base nas variáveis do .env.example:
-   ```env
-   PORT=3000
-   DATABASE_URL="postgresql://postgres:postgres@localhost:5432/app_db"
-   POSTGRES_USER="postgres"
-   POSTGRES_PASSWORD="postgres"
-   POSTGRES_DB="app_db"
-
-   JWT_SECRET="dev_secret_key"
-   JWT_SECRET_REFRESH="dev_refresh_secret_key"
-   JWT_EXPIRES_IN="15m"
-   JWT_REFRESH_EXPIRES_IN="7d"
-   ```
-
-4. **Inicie o banco de dados PostgreSQL:**
-   ```bash
-   docker-compose up -d
-   ```
-
-5. **Gere o cliente Prisma:**
-   ```bash
-   npm run db:generate
-   ```
-
-6. **Execute as migrações do banco:**
-   ```bash
-   npm run db:migrate
-   ```
-
-7. **(Opcional) Povoe a base de dados com dados iniciais:**
-   ```bash
-   npm run db:seed
-   ```
-   Este comando pergunta interativamente se pretende apagar os dados existentes e criar dados de exemplo (utilizadores, clientes, itens e empréstimos).
-
-8. **Inicie o servidor de desenvolvimento:**
-   ```bash
-   npm run dev
-   ```
-
-O servidor estará rodando em `http://localhost:3000`.
-
-### Atalhos
-
-- `npm run start:db` — Combina os passos 4, 6 e 8: inicia a base de dados Docker, executa as migrações e inicializa o servidor.
-- `npm run start:full` — Como o `start:db` mas também copia o `.env.example` para `.env` automaticamente se este não existir. (Útil para primeira execução.)
-
-### Comandos Úteis
-
-- **Desenvolvimento**: `npm run dev` (recarrega automaticamente)
-- **Gerar cliente Prisma**: `npm run db:generate`
-- **Executar migrações**: `npm run db:migrate`
-- **Povoar base de dados**: `npm run db:seed` (interativo, pede confirmação)
-- **Resetar banco**: `npm run db:reset`
-- **Abrir Prisma Studio**: `npm run db:studio`
-- **Arranque completo (DB + servidor)**: `npm run start:db`
-- **Arranque completo com setup automático**: `npm run start:full` (opcional)
-
-## 📡 API Endpoints
-
-### Autenticação (`/auth`)
-
-- `POST /auth/login` - Login (retorna tokens JWT)
-- `POST /auth/refresh` - Refresh do token de acesso
-
-### Usuários (`/user`)
-
-- `POST /user` - Criar novo usuário
-- `GET /user` - Listar todos os usuários (requer auth)
-- `PATCH /user/:id` - Atualizar usuário (requer auth)
-- `DELETE /user/:id` - Deletar usuário (requer auth)
-
-### Itens (`/item`) - Todos requerem autenticação
-
-- `POST /item` - Criar novo item
-- `GET /item` - Listar todos os itens
-- `PATCH /item/:id` - Atualizar item
-- `DELETE /item/:id` - Deletar item
-
-### Empréstimos (`/loan`) - Todos requerem autenticação
-
-- `POST /loan` - Criar novo empréstimo
-- `GET /loan` - Listar todos os empréstimos
-- `PATCH /loan/:id` - Atualizar empréstimo
-- `DELETE /loan/:id` - Deletar empréstimo
-
-## Segurança
-
-- **Hash de senhas**: bcrypt com 10 rounds de salt
-- **Tokens JWT**: Acesso e refresh tokens com expiração
-- **Revogação de tokens**: Refresh tokens podem ser revogados
-- **Validação de entrada**: Todas as entradas são validadas
-- **Tratamento de erros**: Mensagens genéricas para evitar vazamento de informações
-
-## Validações
-
-### Usuário
-- Email: Formato padrão obrigatório
-- Username: 3-24 caracteres, alfanumérico + `._-`
-- Senha: 6-18 caracteres com confirmação
-
-### Item
-- Nome: 2-50 caracteres obrigatório
-- Categoria: Opcional, máximo 30 caracteres
-- Quantidade: Inteiro não-negativo obrigatório
-- Quantidade disponível: Inteiro não-negativo e nunca maior que a quantidade total
-- Localização: Obrigatório, máximo 80 caracteres
-
-### Empréstimo
-- Datas: Formato ISO 8601
-- `dueDate` posterior ou igual a `loanDate`
-- `returnDate` posterior ou igual a `loanDate`
-- Quantidade: Inteiro positivo
-
-## Exemplos de Uso
-
-### Login
 ```bash
-POST /auth/login
-Content-Type: application/json
+npm install
+cp .env.example .env
+```
 
+Substitua os segredos JWT do `.env`. Para gerar valores adequados:
+
+```bash
+openssl rand -base64 48
+```
+
+Use resultados diferentes em `JWT_SECRET` e `JWT_SECRET_REFRESH`. A aplicação recusa configurações ausentes, segredos curtos ou segredos iguais.
+
+Inicie o banco, aplique as migrações e execute a API:
+
+```bash
+npm run start:db
+```
+
+Ou execute cada etapa separadamente:
+
+```bash
+docker compose up -d --wait postgres
+npm run db:generate
+npm run db:deploy
+npm run dev
+```
+
+A API usa `http://localhost:3000` por padrão. Verifique:
+
+```bash
+curl http://localhost:3000/health/live
+curl http://localhost:3000/health/ready
+```
+
+### Atualização de uma instalação existente
+
+Faça backup antes de `npm run db:deploy`. A migração recusa dados que já violem as novas regras. Verifique previamente e corrija conscientemente qualquer resultado:
+
+```sql
+SELECT * FROM "Item"
+WHERE "totalQuantity" < 0
+   OR "availableQuantity" < 0
+   OR "availableQuantity" > "totalQuantity";
+
+SELECT LOWER("email"), COUNT(*) FROM "User"
+GROUP BY LOWER("email") HAVING COUNT(*) > 1;
+
+SELECT LOWER("email"), COUNT(*) FROM "Client"
+GROUP BY LOWER("email") HAVING COUNT(*) > 1;
+```
+
+Mudanças incompatíveis: criação de usuários agora exige `ADMIN`; erros usam `{ error: { code, message } }`; criação de item exige `totalQuantity` e não aceita `availableQuantity`; alterações de quantidade exigem `adjustmentReason`; criações retornam 201; exclusões retornam 204; e excluir um empréstimo agora o cancela sem apagar o histórico.
+
+## Primeiro administrador
+
+A criação de usuários exige um administrador; não existe cadastro público. Numa instalação nova, defina `BOOTSTRAP_ADMIN_USERNAME`, `BOOTSTRAP_ADMIN_EMAIL` e `BOOTSTRAP_ADMIN_PASSWORD` no `.env`, depois execute:
+
+```bash
+npm run db:bootstrap-admin
+```
+
+O comando só cria um usuário quando ainda não existe nenhum administrador. Depois disso, administradores podem criar outros usuários e atribuir `ADMIN` ou `OPERATOR` pela API.
+
+### Dados de exemplo
+
+Para preencher uma base de desenvolvimento descartável, defina senhas próprias em `SEED_ADMIN_PASSWORD` e `SEED_OPERATOR_PASSWORD`, depois execute:
+
+```bash
+npm run db:seed
+```
+
+O seed pede confirmação porque substitui os dados existentes. Para automação em uma base descartável, use `npm run db:seed -- --yes`. Toda a operação é atômica: uma falha restaura os dados anteriores.
+
+## Comandos
+
+| Comando | Finalidade |
+|---|---|
+| `npm run dev` | Servidor de desenvolvimento com reload |
+| `npm run build` | Gera Prisma e compila a aplicação em `dist/` |
+| `npm start` | Executa a compilação de produção |
+| `npm run typecheck` | Verifica aplicação, seed e testes |
+| `npm test` | Testes unitários; integração é habilitada por `RUN_DB_TESTS=true` |
+| `npm run test:coverage` | Testes com relatório de cobertura |
+| `npm run lint` | Lint e verificação de formatação |
+| `npm run check` | Lint, tipos, testes e build |
+| `npm run db:migrate` | Cria/aplica migração em desenvolvimento |
+| `npm run db:deploy` | Aplica migrações existentes |
+| `npm run db:bootstrap-admin` | Cria com segurança o primeiro administrador |
+| `npm run db:seed` | Recria os dados de demonstração |
+
+## Regras importantes
+
+- `ADMIN`: administra usuários e seus papéis, e pode executar todas as operações. O último administrador não pode ser excluído nem rebaixado.
+- `OPERATOR`: consulta dados e cria/atualiza clientes, itens e empréstimos.
+- A quantidade disponível de um item não é editável pela API. Ela é atualizada por empréstimos, devoluções e cancelamentos.
+- Ao alterar a quantidade total, a quantidade disponível é recalculada preservando as unidades emprestadas.
+- Alterações da quantidade total exigem um motivo e geram um registro de auditoria com o operador responsável.
+- Devoluções e reaberturas são serializadas no banco e são seguras contra requisições simultâneas.
+- `DELETE /loan/:id` cancela o empréstimo e preserva o histórico; não remove a linha.
+- E-mails são normalizados em minúsculas e os corpos rejeitam campos desconhecidos.
+- Listas são limitadas a 100 registros por requisição.
+
+## API
+
+A especificação completa está em [openapi.yaml](./openapi.yaml), e exemplos voltados ao frontend estão em [API_DOCUMENTATION.md](./API_DOCUMENTATION.md).
+
+Resumo:
+
+- `/auth`: login, refresh, logout e revogação de todas as sessões
+- `/user`: administração de usuários e alteração da própria senha
+- `/client`: CRUD e histórico de empréstimos
+- `/item`: CRUD e filtros por categoria/localização
+- `/loan`: criação, consulta, devolução/reabertura e cancelamento
+- `/health`: liveness e readiness
+
+Todos os erros usam o mesmo formato:
+
+```json
 {
-  "email": "usuario@fablab.com",
-  "password": "senha123"
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Descrição do erro."
+  }
 }
 ```
 
-### Criar Item
-```bash
-POST /item
-Authorization: Bearer <access_token>
-Content-Type: application/json
+## Segurança e integridade
 
-{
-  "name": "Impressora 3D",
-  "category": "Equipamentos",
-  "totalQuantity": 5,
-  "location": "Sala A-1"
-}
+- Senhas com bcrypt (cost 12) e mínimo de 12 caracteres; o limite de 72 bytes evita truncamento silencioso do bcrypt.
+- JWTs de acesso e refresh usam segredos e finalidades diferentes, algoritmo fixo, issuer e audience.
+- Refresh tokens são armazenados como hash, rotacionados de forma atômica e podem ser revogados.
+- Login/refresh e a API possuem rate limiting.
+- Helmet, limite de corpo JSON e allowlist de CORS habilitados.
+- Quantidades e ordem das datas também são protegidas por constraints PostgreSQL.
+- Operadores responsáveis por criar, devolver ou cancelar empréstimos são registrados.
+- Logs estruturados omitem credenciais e tokens.
+
+Não publique o `.env` nem use as senhas de seed em produção.
+
+## Produção e Docker
+
+O `Dockerfile` gera uma imagem sem dependências de desenvolvimento e executa como usuário não-root:
+
+```bash
+docker build -t sistema-inventario-fablab .
+docker run --rm -p 3000:3000 --env-file .env sistema-inventario-fablab
 ```
 
-### Criar Empréstimo
-```bash
-POST /loan
-Authorization: Bearer <access_token>
-Content-Type: application/json
+Aplique `npm run db:deploy` como etapa única de implantação antes de iniciar novas réplicas. O processo responde a `SIGTERM`/`SIGINT`, fecha o servidor e desconecta o Prisma.
 
-{
-  "clientId": 1,
-  "itemId": 2,
-  "loanDate": "2025-05-01T10:00:00Z",
-  "dueDate": "2025-05-15T10:00:00Z",
-  "loanQuantity": 1
-}
+## Testes de integração
+
+Use exclusivamente uma base descartável cujo nome contenha `test`:
+
+```bash
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/app_test npm run db:deploy
+RUN_DB_TESTS=true DATABASE_URL=postgresql://postgres:postgres@localhost:5432/app_test npm test
 ```
+
+O workflow de CI provisiona essa base automaticamente e executa lint, migrações, tipos, testes, build e auditoria de dependências.
