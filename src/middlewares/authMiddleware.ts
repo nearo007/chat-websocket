@@ -1,32 +1,46 @@
 import { MESSAGES } from "@src/constants/messages.js";
-import { TokenService } from "@src/shared/services/token.service.js";
 import { PrismaAuthRepository } from "@src/modules/auth/repositories/auth.repository.js";
-import type { Request, Response, NextFunction } from "express";
+import { AppError } from "@src/shared/errors/app.error.js";
+import { TokenService } from "@src/shared/services/token.service.js";
+import type { NextFunction, Request, Response } from "express";
 
 const authRepository = new PrismaAuthRepository();
 
-export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
-    const token = req.headers.authorization?.split(" ")[1];
+export async function authMiddleware(req: Request, _res: Response, next: NextFunction) {
+    const authorization = req.headers.authorization;
+    const [scheme, token] = authorization?.split(" ") ?? [];
 
-    if (!token) {
-        return res.status(401).json({ error: MESSAGES.USER.AUTH.TOKEN.NOT_FOUND });
+    if (!authorization) {
+        return next(new AppError(MESSAGES.USER.AUTH.TOKEN.NOT_FOUND, 401, "TOKEN_MISSING"));
     }
 
-    let payload;
+    if (scheme !== "Bearer" || !token) {
+        return next(
+            new AppError(MESSAGES.USER.AUTH.TOKEN.INVALID_OR_EXPIRED, 401, "TOKEN_INVALID"),
+        );
+    }
+
+    let payload: ReturnType<typeof TokenService.verifyAccess>;
     try {
-        payload = TokenService.verify(token);
+        payload = TokenService.verifyAccess(token);
     } catch {
-        return res.status(401).json({ error: MESSAGES.USER.AUTH.TOKEN.INVALID_OR_EXPIRED });
+        return next(
+            new AppError(MESSAGES.USER.AUTH.TOKEN.INVALID_OR_EXPIRED, 401, "TOKEN_INVALID"),
+        );
     }
 
     const userId = typeof payload.sub === "string" ? Number(payload.sub) : NaN;
     if (!Number.isInteger(userId) || userId < 1) {
-        return res.status(401).json({ error: MESSAGES.USER.AUTH.TOKEN.INVALID_OR_EXPIRED });
+        return next(
+            new AppError(MESSAGES.USER.AUTH.TOKEN.INVALID_OR_EXPIRED, 401, "TOKEN_INVALID"),
+        );
     }
 
     const user = await authRepository.findUserById(userId);
     if (!user) {
-        return res.status(401).json({ error: MESSAGES.USER.AUTH.TOKEN.INVALID_OR_EXPIRED });
+        return next(
+            new AppError(MESSAGES.USER.AUTH.TOKEN.INVALID_OR_EXPIRED, 401, "TOKEN_INVALID"),
+        );
     }
 
     req.userId = String(user.id);

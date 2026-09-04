@@ -1,8 +1,8 @@
 import { MESSAGES } from "@src/constants/messages.js";
+import { AppError } from "@src/shared/errors/app.error.js";
 import { EmailValidator } from "@src/shared/utils/validators/email.validator.js";
 import { PhoneValidator } from "@src/shared/utils/validators/phone.validator.js";
 import type { UpdateClientDTO } from "../client.dtos.js";
-import { AppError } from "@src/shared/errors/app.error.js";
 
 export class UpdateClientValidator {
     static validate(data: UpdateClientDTO) {

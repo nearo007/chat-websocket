@@ -2,11 +2,7 @@ import { MESSAGES } from "@src/constants/messages.js";
 import { AppError } from "@src/shared/errors/app.error.js";
 
 export class QuantityValidator {
-    static validate(
-        quantity: number,
-        minQuantity: number = 0,
-        maxQuantity?: number,
-    ) {
+    static validate(quantity: number, minQuantity: number = 0, maxQuantity?: number) {
         if (quantity === null || quantity === undefined) {
             throw new AppError(MESSAGES.SHARED.VALIDATION.QUANTITY_REQUIRED);
         }
@@ -22,15 +18,11 @@ export class QuantityValidator {
         }
 
         if (quantity < minQuantity) {
-            throw new AppError(
-                MESSAGES.SHARED.VALIDATION.QUANTITY_TOO_LOW(minQuantity),
-            );
+            throw new AppError(MESSAGES.SHARED.VALIDATION.QUANTITY_TOO_LOW(minQuantity));
         }
 
         if (maxQuantity !== undefined && quantity > maxQuantity) {
-            throw new AppError(
-                MESSAGES.SHARED.VALIDATION.QUANTITY_TOO_HIGH(maxQuantity),
-            );
+            throw new AppError(MESSAGES.SHARED.VALIDATION.QUANTITY_TOO_HIGH(maxQuantity));
         }
     }
 }

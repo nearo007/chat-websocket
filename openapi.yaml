@@ -1,0 +1,961 @@
+openapi: 3.1.0
+info:
+  title: Sistema de Inventário FabLab
+  version: 2.0.0
+  description: API de inventário, clientes e empréstimos.
+  license:
+    name: ISC
+    identifier: ISC
+servers:
+  - url: http://localhost:3000
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+  - name: Users
+  - name: Clients
+  - name: Items
+  - name: Loans
+  - name: Health
+paths:
+  /health/live:
+    get:
+      security: []
+      tags: [Health]
+      summary: Verifica se o processo está ativo
+      responses:
+        "200":
+          description: Processo ativo
+  /health/ready:
+    get:
+      security: []
+      tags: [Health]
+      summary: Verifica a conexão com o banco
+      responses:
+        "200":
+          description: Aplicação pronta
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /auth/login:
+    post:
+      security: []
+      tags: [Auth]
+      summary: Autentica um usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tokens"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /auth/refresh:
+    post:
+      security: []
+      tags: [Auth]
+      summary: Rotaciona o refresh token
+      requestBody:
+        $ref: "#/components/requestBodies/RefreshToken"
+      responses:
+        "200":
+          description: Tokens rotacionados
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tokens"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /auth/logout:
+    post:
+      security: []
+      tags: [Auth]
+      summary: Revoga um refresh token
+      requestBody:
+        $ref: "#/components/requestBodies/RefreshToken"
+      responses:
+        "204":
+          description: Token revogado ou já inexistente
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /auth/logout-all:
+    post:
+      tags: [Auth]
+      summary: Revoga todas as sessões do usuário
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Sessões revogadas
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /user:
+    post:
+      tags: [Users]
+      summary: Cria um operador (ADMIN)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserInput"
+      responses:
+        "201":
+          description: Usuário criado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    get:
+      tags: [Users]
+      summary: Lista usuários (ADMIN)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/Search"
+      responses:
+        "200":
+          description: Usuários
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /user/me/password:
+    patch:
+      tags: [Users]
+      summary: Altera a própria senha e revoga sessões
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordInput"
+      responses:
+        "204":
+          description: Senha alterada
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /user/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [Users]
+      summary: Obtém um usuário (ADMIN)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Usuário
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Users]
+      summary: Atualiza um usuário (ADMIN)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserInput"
+      responses:
+        "200":
+          description: Usuário atualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags: [Users]
+      summary: Remove um usuário (ADMIN)
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Usuário removido
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /client:
+    get:
+      tags: [Clients]
+      summary: Lista clientes
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/Search"
+      responses:
+        "200":
+          description: Clientes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Client"
+    post:
+      tags: [Clients]
+      summary: Cria um cliente
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientInput"
+      responses:
+        "201":
+          description: Cliente criado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /client/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [Clients]
+      summary: Obtém um cliente
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Cliente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Clients]
+      summary: Atualiza um cliente
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateClientInput"
+      responses:
+        "200":
+          description: Cliente atualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Clients]
+      summary: Remove um cliente sem histórico (ADMIN)
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Cliente removido
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /client/{id}/loans:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [Clients]
+      summary: Obtém o histórico do cliente
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Cliente com empréstimos
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /item:
+    get:
+      tags: [Items]
+      summary: Lista itens
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/Search"
+      responses:
+        "200":
+          description: Itens
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Item"
+    post:
+      tags: [Items]
+      summary: Cria um item
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateItemInput"
+      responses:
+        "201":
+          description: Item criado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /item/by-category:
+    get:
+      tags: [Items]
+      summary: Filtra itens por categoria
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: category
+          in: query
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Itens
+  /item/by-location:
+    get:
+      tags: [Items]
+      summary: Filtra itens por localização
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: location
+          in: query
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Itens
+  /item/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [Items]
+      summary: Obtém um item
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Items]
+      summary: Atualiza um item e preserva as unidades emprestadas
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateItemInput"
+      responses:
+        "200":
+          description: Item atualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags: [Items]
+      summary: Remove um item sem histórico (ADMIN)
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Item removido
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /item/{id}/adjustments:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [Items]
+      summary: Lista ajustes de quantidade de um item (ADMIN)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Ajustes de inventário
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InventoryAdjustment"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /loan:
+    get:
+      tags: [Loans]
+      summary: Lista empréstimos
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all, active, returned, cancelled, overdue]
+            default: all
+      responses:
+        "200":
+          description: Empréstimos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Loan"
+    post:
+      tags: [Loans]
+      summary: Cria um empréstimo e reserva estoque
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLoanInput"
+      responses:
+        "201":
+          description: Empréstimo criado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Loan"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /loan/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [Loans]
+      summary: Obtém um empréstimo
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Empréstimo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Loan"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Loans]
+      summary: Atualiza datas, devolve ou reabre um empréstimo
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLoanInput"
+      responses:
+        "200":
+          description: Empréstimo atualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Loan"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags: [Loans]
+      summary: Cancela sem apagar o histórico (ADMIN)
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Empréstimo cancelado
+        "404":
+          $ref: "#/components/responses/NotFound"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: pageSize
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+    Search:
+      name: search
+      in: query
+      schema:
+        type: string
+        maxLength: 100
+  requestBodies:
+    RefreshToken:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [refreshToken]
+            properties:
+              refreshToken:
+                type: string
+  responses:
+    BadRequest:
+      description: Requisição inválida
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Não autenticado
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Acesso negado
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: Conflito de regra de negócio ou integridade
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    RateLimited:
+      description: Limite de requisições excedido
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalError:
+      description: Erro inesperado
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+    Tokens:
+      type: object
+      required: [accessToken, refreshToken]
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+    LoginInput:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    CreateUserInput:
+      type: object
+      additionalProperties: false
+      required: [username, email, password, passwordConfirm]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 24
+          pattern: "^[a-zA-Z0-9._-]+$"
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 12
+          format: password
+        passwordConfirm:
+          type: string
+          format: password
+        role:
+          type: string
+          enum: [ADMIN, OPERATOR]
+    UpdateUserInput:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [ADMIN, OPERATOR]
+    ChangePasswordInput:
+      type: object
+      additionalProperties: false
+      required: [currentPassword, newPassword, passwordConfirm]
+      properties:
+        currentPassword:
+          type: string
+          format: password
+        newPassword:
+          type: string
+          minLength: 12
+          format: password
+        passwordConfirm:
+          type: string
+          format: password
+    User:
+      type: object
+      required: [id, username, email, role, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [ADMIN, OPERATOR]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ClientInput:
+      type: object
+      additionalProperties: false
+      required: [name, email]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 50
+        email:
+          type: string
+          format: email
+        phone:
+          type: [string, "null"]
+    UpdateClientInput:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 50
+        email:
+          type: string
+          format: email
+        phone:
+          type: [string, "null"]
+    Client:
+      type: object
+      required: [id, name, email, phone, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: [string, "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateItemInput:
+      type: object
+      additionalProperties: false
+      required: [name, totalQuantity, location]
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+        totalQuantity:
+          type: integer
+          minimum: 0
+        location:
+          type: string
+    UpdateItemInput:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name:
+          type: string
+        category:
+          type: [string, "null"]
+        totalQuantity:
+          type: integer
+          minimum: 0
+        adjustmentReason:
+          type: string
+          minLength: 3
+          maxLength: 200
+        location:
+          type: string
+    Item:
+      type: object
+      required: [id, name, category, totalQuantity, availableQuantity, location, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        category:
+          type: [string, "null"]
+        totalQuantity:
+          type: integer
+        availableQuantity:
+          type: integer
+        location:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    InventoryAdjustment:
+      type: object
+      required:
+        - id
+        - itemId
+        - previousTotal
+        - newTotal
+        - previousAvailable
+        - newAvailable
+        - reason
+        - createdAt
+      properties:
+        id:
+          type: integer
+        itemId:
+          type: integer
+        actorId:
+          type: [integer, "null"]
+        previousTotal:
+          type: integer
+        newTotal:
+          type: integer
+        previousAvailable:
+          type: integer
+        newAvailable:
+          type: integer
+        reason:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    CreateLoanInput:
+      type: object
+      additionalProperties: false
+      required: [clientId, itemId, loanDate, dueDate, loanQuantity]
+      properties:
+        clientId:
+          type: integer
+          minimum: 1
+        itemId:
+          type: integer
+          minimum: 1
+        loanDate:
+          type: string
+        dueDate:
+          type: string
+        loanQuantity:
+          type: integer
+          minimum: 1
+        returnDate:
+          type: [string, "null"]
+    UpdateLoanInput:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        loanDate:
+          type: string
+        dueDate:
+          type: string
+        returnDate:
+          type: [string, "null"]
+    Loan:
+      type: object
+      required:
+        - id
+        - clientId
+        - itemId
+        - loanQuantity
+        - loanDate
+        - dueDate
+        - returnDate
+        - cancelledAt
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+        clientId:
+          type: integer
+        itemId:
+          type: integer
+        loanQuantity:
+          type: integer
+        loanDate:
+          type: string
+          format: date-time
+        dueDate:
+          type: string
+          format: date-time
+        returnDate:
+          type: [string, "null"]
+          format: date-time
+        cancelledAt:
+          type: [string, "null"]
+          format: date-time
+        createdById:
+          type: [integer, "null"]
+        returnedById:
+          type: [integer, "null"]
+        cancelledById:
+          type: [integer, "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
